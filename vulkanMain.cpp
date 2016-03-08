@@ -1,14 +1,27 @@
-//
-// Created by Galen on 3/8/2016.
-//
+/**
+ * Galen Cochrane
+ * Copyright (C) 2016
+ * This code is licensed under the MIT license (MIT) (http://opensource.org/licenses/MIT)
+ */
 
-#include "vulkan.h"
+#include "vulkan/vulkan.h"
+#include "vkbpDefines.h"
+#include "VulkanContext.h"
+#include "vulkanStructHelpers.h"
+
+using namespace vkbp;
 
 int main() {
-    VkApplicationInfo appInfo = {};
-    appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    appInfo.pApplicationName = "VulkanBoilerplate";
-    appInfo.pEngineName = "VulkanBoilerplate";
-    appInfo.apiVersion = VK_API_VERSION;
+
+    VulkanContext vk;
+
+    VkApplicationInfo appInfo;
+    FillVkApplicationInfo(appInfo);
+
+    VkInstanceCreateInfo instanceInfo;
+    FillVkInstanceInfo(appInfo, instanceInfo);
+
+    vk.init(instanceInfo);
+
     return 0;
 }
