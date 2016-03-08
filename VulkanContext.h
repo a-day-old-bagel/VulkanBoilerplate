@@ -14,10 +14,11 @@
 namespace vkbp {
     struct VulkanContext {
         VkInstance instance;
+        bool hasInit;
 
         VulkanContext();
         ~VulkanContext();
-        int init(VkInstanceCreateInfo& instanceInfo);
+        VkResult init(const char* appName, const char* engName);
     };
 }
 

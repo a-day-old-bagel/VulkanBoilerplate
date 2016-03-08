@@ -26,12 +26,11 @@ ELSE(WIN32)
 ENDIF(WIN32)
     set(LIBS ${LIBS} ${VULKAN_LIBS})
 
-
 set(INCLUDE_DIR ./ "C:/libs/VulkanSDK/1.0.3.1/Include/vulkan")
 include_directories(${INCLUDE_DIR})
 
 # Find all the source files
-set(SOURCE_FILES vulkanMain.cpp vulkanStructHelpers.cpp vulkanStructHelpers.h VulkanContext.cpp VulkanContext.h vkbpDefines.h vkbpDefines.cpp)
+set(SOURCE_FILES vulkanMain.cpp vulkanHelpers.cpp vulkanHelpers.h VulkanContext.cpp VulkanContext.h vkbpDefines.h vkbpDefines.cpp vkbp.h)
 
 # Make an executable called DualityEngine out of all the above source files
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})

@@ -9,10 +9,16 @@
 #ifndef VKBP_DEFINES_H
 #define VKBP_DEFINES_H
 
-#define VKBP_ENABLE_VALIDATION true
+#ifndef NDEBUG
+#define VKBP_ENABLE_VALIDATION
+#endif
 
 namespace vkbp {
-    extern const char* surface_extension_name;
+    namespace settings {
+        extern const char* windowing_system_extension_name;
+        extern const uint32_t validation_layer_count;
+        extern const char* validation_layer_names[];
+    }
 }
 
 #endif //VKBP_DEFINES_H

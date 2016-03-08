@@ -4,24 +4,19 @@
  * This code is licensed under the MIT license (MIT) (http://opensource.org/licenses/MIT)
  */
 
-#include "vulkan/vulkan.h"
-#include "vkbpDefines.h"
-#include "VulkanContext.h"
-#include "vulkanStructHelpers.h"
-
-using namespace vkbp;
+#include <vector>
+#include <iostream>
+#include "vkbp.h"
 
 int main() {
 
-    VulkanContext vk;
+    vkbp::VulkanContext vk;
 
-    VkApplicationInfo appInfo;
-    FillVkApplicationInfo(appInfo);
-
-    VkInstanceCreateInfo instanceInfo;
-    FillVkInstanceInfo(appInfo, instanceInfo);
-
-    vk.init(instanceInfo);
+    VkResult res = vk.init("Vulkan Test", "VKBP");
+    if (res != VK_SUCCESS) {
+        std::cout << std::endl << "Vulkan failed to initialize: " << vkbp::errorString(res) << std::endl;
+        return 1;
+    }
 
     return 0;
 }
