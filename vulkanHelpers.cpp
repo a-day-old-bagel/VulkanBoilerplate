@@ -34,11 +34,7 @@ namespace vkbp {
             instanceInfo.ppEnabledExtensionNames = NULL;
         }
         instanceInfo.enabledLayerCount = settings::validation_layer_count;
-        if (settings::validation_layer_count) {
-            instanceInfo.ppEnabledLayerNames = settings::validation_layer_names;
-        } else {
-            instanceInfo.ppEnabledLayerNames = NULL;
-        }
+        instanceInfo.ppEnabledLayerNames = (const char**)settings::validation_layer_names;
     }
 
     void AppendBasicVkExtensions(std::vector<const char*> &extVec) {

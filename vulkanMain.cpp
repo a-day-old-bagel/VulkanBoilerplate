@@ -16,6 +16,12 @@ int main() {
     if (res != VK_SUCCESS) {
         std::cout << std::endl << "Vulkan failed to initialize: " << vkbp::errorString(res) << std::endl;
         return 1;
+    } else {
+        std::cout << std::endl << "Vulkan instance created." << std::endl;
+    }
+
+    if (vkbp::settings::validation_layer_count) {
+        std::cout << "Vulkan validation layers active." << std::endl;
     }
 
     return 0;

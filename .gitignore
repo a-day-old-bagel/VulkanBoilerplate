@@ -29,3 +29,6 @@
 
 # CLion IDE files
 .idea
+
+# Build folders
+build
