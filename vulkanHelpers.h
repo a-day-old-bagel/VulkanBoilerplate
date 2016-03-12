@@ -9,7 +9,7 @@
 #include <vector>
 #include <string>
 #include "vulkan/vulkan.h"
-#include "vkbpDefines.h"
+#include "vkbpGlobal.h"
 
 #ifndef VKBP_VULKANSTRUCTHELPERS_H
 #define VKBP_VULKANSTRUCTHELPERS_H
@@ -19,7 +19,7 @@ namespace vkbp {
     void FillVkApplicationInfo(const char* appName, const char* engName, VkApplicationInfo &appInfo);
     void FillVkInstanceInfo(const VkApplicationInfo &appInfo, const std::vector<const char*> &extVec,
                             VkInstanceCreateInfo &instanceInfo);
-    std::string errorString(VkResult errorCode);
+    std::string resolveEnumToString(VkResult err);
 }
 
 #endif //VKBP_VULKANSTRUCTHELPERS_H

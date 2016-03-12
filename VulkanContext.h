@@ -9,7 +9,7 @@
 #define VKBP_VULKANCONTEXT_H
 
 #include "vulkan/vulkan.h"
-#include "vkbpDefines.h"
+#include "vkbpGlobal.h"
 
 namespace vkbp {
     struct VulkanContext {

@@ -9,6 +9,7 @@
 #ifndef VKBP_DEFINES_H
 #define VKBP_DEFINES_H
 
+// The NDEBUG switch should be defined for any release build.  It removes validation layers and other debug code.
 #ifndef NDEBUG
 #define VKBP_ENABLE_VALIDATION
 #endif

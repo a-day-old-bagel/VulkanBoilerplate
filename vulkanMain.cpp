@@ -14,7 +14,7 @@ int main() {
 
     VkResult res = vk.init("Vulkan Test", "VKBP");
     if (res != VK_SUCCESS) {
-        std::cout << std::endl << "Vulkan failed to initialize: " << vkbp::errorString(res) << std::endl;
+        std::cout << std::endl << "Vulkan failed to initialize: " << vkbp::resolveEnumToString(res) << std::endl;
         return 1;
     } else {
         std::cout << std::endl << "Vulkan instance created." << std::endl;

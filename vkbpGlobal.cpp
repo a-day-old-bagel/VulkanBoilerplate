@@ -7,14 +7,14 @@
  */
 
 #include "vulkan/vulkan.h"
-#include "vkbpDefines.h"
+#include "vkbpGlobal.h"
 
 namespace vkbp {
     namespace settings {
         #ifdef VKBP_ENABLE_VALIDATION
-        const uint32_t validation_layer_count = 9;
+        const uint32_t validation_layer_count = 8;
         const char* validation_layer_names[] = {
-                "VK_LAYER_LUNARG_threading",
+                "VK_LAYER_GOOGLE_threading",
                 "VK_LAYER_LUNARG_mem_tracker",
                 "VK_LAYER_LUNARG_object_tracker",
                 "VK_LAYER_LUNARG_draw_state",

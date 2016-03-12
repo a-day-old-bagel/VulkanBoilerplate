@@ -5,7 +5,7 @@
 #ifndef VKBP_VKBP_H
 #define VKBP_VKBP_H
 
-#include "vkbpDefines.h"
+#include "vkbpGlobal.h"
 #include "VulkanContext.h"
 #include "vulkanHelpers.h"
 

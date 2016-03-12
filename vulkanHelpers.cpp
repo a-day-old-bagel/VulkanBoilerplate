@@ -7,7 +7,7 @@
  */
 
 #include "vulkan/vulkan.h"
-#include "vkbpDefines.h"
+#include "vkbpGlobal.h"
 #include "vulkanHelpers.h"
 
 namespace vkbp {
@@ -45,25 +45,35 @@ namespace vkbp {
         }
     }
 
-    #define STR(r) case VK_ ##r: return #r
-    std::string errorString(VkResult errorCode) {
-        switch (errorCode) {
-            STR(NOT_READY);
-            STR(TIMEOUT);
-            STR(EVENT_SET);
-            STR(EVENT_RESET);
-            STR(INCOMPLETE);
-            STR(ERROR_OUT_OF_HOST_MEMORY);
-            STR(ERROR_OUT_OF_DEVICE_MEMORY);
-            STR(ERROR_INITIALIZATION_FAILED);
-            STR(ERROR_DEVICE_LOST);
-            STR(ERROR_MEMORY_MAP_FAILED);
-            STR(ERROR_LAYER_NOT_PRESENT);
-            STR(ERROR_EXTENSION_NOT_PRESENT);
-            STR(ERROR_INCOMPATIBLE_DRIVER);
+    #define CASE_ENUM_TOSTR(r) case VK_ ##r: return #r
+    std::string resolveEnumToString(VkResult err) {
+        switch (err) {
+            CASE_ENUM_TOSTR(NOT_READY);
+            CASE_ENUM_TOSTR(TIMEOUT);
+            CASE_ENUM_TOSTR(EVENT_SET);
+            CASE_ENUM_TOSTR(EVENT_RESET);
+            CASE_ENUM_TOSTR(INCOMPLETE);
+            CASE_ENUM_TOSTR(ERROR_OUT_OF_HOST_MEMORY);
+            CASE_ENUM_TOSTR(ERROR_OUT_OF_DEVICE_MEMORY);
+            CASE_ENUM_TOSTR(ERROR_INITIALIZATION_FAILED);
+            CASE_ENUM_TOSTR(ERROR_DEVICE_LOST);
+            CASE_ENUM_TOSTR(ERROR_MEMORY_MAP_FAILED);
+            CASE_ENUM_TOSTR(ERROR_LAYER_NOT_PRESENT);
+            CASE_ENUM_TOSTR(ERROR_EXTENSION_NOT_PRESENT);
+            CASE_ENUM_TOSTR(ERROR_INCOMPATIBLE_DRIVER);
+            CASE_ENUM_TOSTR(ERROR_FEATURE_NOT_PRESENT);
+            CASE_ENUM_TOSTR(ERROR_TOO_MANY_OBJECTS);
+            CASE_ENUM_TOSTR(ERROR_FORMAT_NOT_SUPPORTED);
+            CASE_ENUM_TOSTR(ERROR_SURFACE_LOST_KHR);
+            CASE_ENUM_TOSTR(ERROR_NATIVE_WINDOW_IN_USE_KHR);
+            CASE_ENUM_TOSTR(SUBOPTIMAL_KHR);
+            CASE_ENUM_TOSTR(ERROR_OUT_OF_DATE_KHR);
+            CASE_ENUM_TOSTR(ERROR_INCOMPATIBLE_DISPLAY_KHR);
+            CASE_ENUM_TOSTR(ERROR_VALIDATION_FAILED_EXT);
+            CASE_ENUM_TOSTR(ERROR_INVALID_SHADER_NV);
             default:
-                return "UNKNOWN_ERROR";
+                return "Unknown Error.";
         }
     }
-    #undef STR
+    #undef CASE_ENUM_TOSTR
 }
