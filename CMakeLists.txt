@@ -9,33 +9,30 @@ cmake_minimum_required(VERSION 3.3)
 # Declare the project in question
 project(VKBP)
 
-# Tell cMake where to look for the modules that search for SDL2 (the others come with cMake)
+# Tell cMake where to look for the modules
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
 
-# Tell cMake where to look for third party libs (add to this for your own builds)
-IF(WIN32)
+IF(WIN32 OR CYGWIN)
     message("Building for Windows")
-    set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "C:/libs/VulkanSDK/1.0.3.1/Include")
-    set(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} "C:/libs/VulkanSDK/1.0.3.1/Bin32")
-    find_library(VULKAN_LIBS NAMES vulkan-1 PATHS ${CMAKE_LIBRARY_PATH})
+    set(VULKAN_ROOT $ENV{VULKAN_SDK})
+    set(LIBS ${LIBS} "${VULKAN_ROOT}/Bin32/vulkan-1.lib")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DVK_USE_PLATFORM_WIN32_KHR")
-ELSE(WIN32)
+    set(INCLUDE_DIR ${INCLUDE_DIR} "${VULKAN_ROOT}/Include")
+ELSE(WIN32 OR CYGWIN)
     message("Building for Linux")
     set(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} "/usr/lib64")
     find_library(VULKAN_LIBS NAMES libvulkan.so PATHS ${CMAKE_LIBRARY_PATH})
     find_package(XCB REQUIRED)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DVK_USE_PLATFORM_XCB_KHR -std=c++11 -Wall -Wextra -g -O3")
-ENDIF(WIN32)
-set(LIBS ${LIBS} ${VULKAN_LIBS})
+    set(LIBS ${LIBS} ${VULKAN_LIBS})
+ENDIF(WIN32 OR CYGWIN)
 
-set(INCLUDE_DIR ./ "C:/libs/VulkanSDK/1.0.3.1/Include")
+set(INCLUDE_DIR ${INCLUDE_DIR} ./)
 include_directories(${INCLUDE_DIR})
 
 # Find all the source files
 set(SOURCE_FILES vulkanMain.cpp vulkanHelpers.cpp vulkanHelpers.h VulkanContext.cpp VulkanContext.h vkbpGlobal.h vkbpGlobal.cpp vkbp.h VkbpWindow.cpp VkbpWindow.h)
 
-# Make an executable called DualityEngine out of all the above source files
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
 
-# Link to external libraries that were found above
 target_link_libraries(${PROJECT_NAME} ${LIBS})
