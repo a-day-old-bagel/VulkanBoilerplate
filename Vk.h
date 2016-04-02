@@ -12,13 +12,17 @@
 #include "vkbpGlobal.h"
 
 namespace vkbp {
-    struct VulkanContext {
+    struct Vk {
         VkInstance instance;
+        VkPhysicalDevice physicalDevice;
+        VkDevice device;
+        VkQueue queue;
         bool hasInit;
 
-        VulkanContext();
-        ~VulkanContext();
+        Vk();
+        ~Vk();
         VkResult init(const char* appName, const char* engName);
+        VkResult initSimple();
     };
 }
 

@@ -10,7 +10,7 @@
 
 int main() {
 
-    vkbp::VulkanContext vk;
+    vkbp::Vk vk;
 
     VkResult res = vk.init("Vulkan Test", "VKBP");
     if (res != VK_SUCCESS) {
