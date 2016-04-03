@@ -7,6 +7,8 @@
  */
 
 #include <array>
+#include <iostream>
+#include <cstring>
 #include "vulkan/vulkan.h"
 #include "Vk.h"
 #include "vulkanHelpers.h"
@@ -42,6 +44,31 @@ namespace vkbp {
         return res;
     }
 
+    VkBool32 messageCallback(
+            VkDebugReportFlagsEXT flags,
+            VkDebugReportObjectTypeEXT objType,
+            uint64_t srcObject,
+            size_t location,
+            int32_t msgCode,
+            const char* pLayerPrefix,
+            const char* pMsg,
+            void* pUserData) {
+        char *message = (char *)malloc(std::strlen(pMsg) + 100);
+        if (!message) {
+            std::cout << "BAD MESSAGE at line " << __LINE__ << std::endl;
+            exit(1);
+        }
+        if (flags & VK_DEBUG_REPORT_ERROR_BIT_EXT) {
+            std::cout << "ERROR: " << "[" << pLayerPrefix << "] Code " << msgCode << " : " << pMsg << "\n";
+        } else if (flags & VK_DEBUG_REPORT_WARNING_BIT_EXT) {
+            std::cout << "WARNING: " << "[" << pLayerPrefix << "] Code " << msgCode << " : " << pMsg << "\n";
+        } else {
+            return false;
+        }
+        fflush(stdout);
+        free(message);
+        return false;
+    }
     VkResult Vk::initSimple() {
         int width = 800;
         int height = 600;
@@ -51,7 +78,7 @@ namespace vkbp {
         bool enableValidation = true;
         uint32_t validationLayerCount = 9;
         const char *validationLayerNames[] = {
-            "VK_LAYER_LUNARG_threading",
+            "VK_LAYER_GOOGLE_threading",
             "VK_LAYER_LUNARG_mem_tracker",
             "VK_LAYER_LUNARG_object_tracker",
             "VK_LAYER_LUNARG_draw_state",
@@ -85,7 +112,9 @@ namespace vkbp {
         VkApplicationInfo appInfo = {};
         appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
         appInfo.pApplicationName = name.c_str();
+        appInfo.applicationVersion = VK_MAKE_VERSION(0, 0, 1);
         appInfo.pEngineName = name.c_str();
+        appInfo.engineVersion = VK_MAKE_VERSION(0, 0, 1);
         appInfo.apiVersion = VK_API_VERSION_1_0;
         std::vector<const char*> enabledExtensions = {
             VK_KHR_SURFACE_EXTENSION_NAME,
@@ -121,41 +150,60 @@ namespace vkbp {
             return ret;
         }
 
-        uint32_t gpuCount = 0;
-        ret = vkEnumeratePhysicalDevices(instance, &gpuCount, NULL);
+        uint32_t physicalDeviceCount = 0;
+        ret = vkEnumeratePhysicalDevices(instance, &physicalDeviceCount, NULL);
         if (ret != VK_SUCCESS) {
             printf("Unable to enumerate physical devices!\n");
             return ret;
         }
-        if (gpuCount <= 0) {
+        if (physicalDeviceCount <= 0) {
             printf("No GPU found!");
             exit(1);
         }
-        std::vector<VkPhysicalDevice> physicalDevices(gpuCount);
-        ret = vkEnumeratePhysicalDevices(instance, &gpuCount, physicalDevices.data());
+        std::vector<VkPhysicalDevice> physicalDevices(physicalDeviceCount);
+        ret = vkEnumeratePhysicalDevices(instance, &physicalDeviceCount, physicalDevices.data());
         if (ret != VK_SUCCESS) {
             printf("Unable to enumerate physical devices!\n");
             return ret;
         }
 
-        //TODO: CHANGE THIS NOW
-        physicalDevice = physicalDevices[0];
+        int whichPhysicalDevice = 0;
+        VkPhysicalDeviceType currentPhysicalDeviceType = VK_PHYSICAL_DEVICE_TYPE_OTHER;
+        std::cout << physicalDeviceCount << " Physical devices recognized:\n";
+        VkPhysicalDeviceProperties deviceProperties = {};
+        for (uint32_t i = 0; i < physicalDeviceCount; ++i) {
+            vkGetPhysicalDeviceProperties(physicalDevices[i], &deviceProperties);
+            std::cout << "    NAME: " << deviceProperties.deviceName << std::endl;
+            std::cout << "    TYPE: " << resolvePhysicalDeviceTypeToString(deviceProperties.deviceType);
+            std::cout << std::endl;
+            if ((currentPhysicalDeviceType != VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU &&
+                 currentPhysicalDeviceType != VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU &&
+                 deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU) ||
+                (currentPhysicalDeviceType != VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU &&
+                 deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)) {
+                whichPhysicalDevice = i;
+                currentPhysicalDeviceType = deviceProperties.deviceType;
+            }
+        }
+        vkGetPhysicalDeviceProperties(physicalDevices[whichPhysicalDevice], &deviceProperties);
+        std::cout << "Choosing to use: " << deviceProperties.deviceName << std::endl;
+        physicalDevice = physicalDevices[whichPhysicalDevice];
 
         uint32_t graphicsQueueIndex;
-        uint32_t queueCount;
-        vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueCount, NULL);
-        if (queueCount < 1) {
+        uint32_t graphicsQueueCount;
+        vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &graphicsQueueCount, NULL);
+        if (graphicsQueueCount < 1) {
             printf("Queue family properties not found!\n");
             exit(1);
         }
-        std::vector<VkQueueFamilyProperties> queueProps(queueCount);
-        vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueCount, queueProps.data());
-        for (graphicsQueueIndex = 0; graphicsQueueIndex < queueCount; ++graphicsQueueIndex) {
-            if (queueProps[graphicsQueueIndex].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+        std::vector<VkQueueFamilyProperties> graphicsQueueProps(graphicsQueueCount);
+        vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &graphicsQueueCount, graphicsQueueProps.data());
+        for (graphicsQueueIndex = 0; graphicsQueueIndex < graphicsQueueCount; ++graphicsQueueIndex) {
+            if (graphicsQueueProps[graphicsQueueIndex].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
                 break;
             }
         }
-        if (graphicsQueueIndex >= queueCount) {
+        if (graphicsQueueIndex >= graphicsQueueCount) {
             printf("Graphics queue not found!\n");
             exit(1);
         }
@@ -217,6 +265,216 @@ namespace vkbp {
             exit(1);
         }
 
-        // TODO look at swapChain.connect(instance, physicalDevice, device) at vulkanExampleBase.cpp:578
+        #define GET_INSTANCE_PROC_ADDR(inst, entrypoint)                        \
+        {                                                                       \
+            fp##entrypoint = (PFN_vk##entrypoint) vkGetInstanceProcAddr(inst, "vk"#entrypoint); \
+            if (fp##entrypoint == NULL)                                         \
+            {																    \
+                exit(1);                                                        \
+            }                                                                   \
+        }
+        #define GET_DEVICE_PROC_ADDR(dev, entrypoint)                           \
+        {                                                                       \
+            fp##entrypoint = (PFN_vk##entrypoint) vkGetDeviceProcAddr(dev, "vk"#entrypoint);   \
+            if (fp##entrypoint == NULL)                                         \
+            {																    \
+                exit(1);                                                        \
+            }                                                                   \
+        }
+        GET_INSTANCE_PROC_ADDR(instance, GetPhysicalDeviceSurfaceSupportKHR);
+        GET_INSTANCE_PROC_ADDR(instance, GetPhysicalDeviceSurfaceCapabilitiesKHR);
+        GET_INSTANCE_PROC_ADDR(instance, GetPhysicalDeviceSurfaceFormatsKHR);
+        GET_INSTANCE_PROC_ADDR(instance, GetPhysicalDeviceSurfacePresentModesKHR);
+        GET_DEVICE_PROC_ADDR(device, CreateSwapchainKHR);
+        GET_DEVICE_PROC_ADDR(device, DestroySwapchainKHR);
+        GET_DEVICE_PROC_ADDR(device, GetSwapchainImagesKHR);
+        GET_DEVICE_PROC_ADDR(device, AcquireNextImageKHR);
+        GET_DEVICE_PROC_ADDR(device, QueuePresentKHR);
+        #undef GET_INSTANCE_PROC_ADDR
+        #undef GET_DEVICE_PROC_ADDR
+
+        VkSemaphoreCreateInfo semaphoreCreateInfo = {};
+        semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+        semaphoreCreateInfo.pNext = NULL;
+        semaphoreCreateInfo.flags = 0;
+        struct {
+            VkSemaphore presentComplete;
+            VkSemaphore renderComplete;
+        } semaphores;
+        ret = vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &semaphores.presentComplete);
+        if (ret != VK_SUCCESS) {
+            printf("Could not create Vulkan semaphore (presentComplete)!\n");
+            exit(1);
+        }
+        ret = vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &semaphores.renderComplete);
+        if (ret != VK_SUCCESS) {
+            printf("Could not create Vulkan semaphore (renderComplete)!\n");
+            exit(1);
+        }
+
+        VkPipelineStageFlags submitPipelineStages = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+        VkSubmitInfo submitInfo = {};
+        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        submitInfo.pNext = NULL;
+        submitInfo.pWaitDstStageMask = &submitPipelineStages;
+        submitInfo.waitSemaphoreCount = 1;
+        submitInfo.pWaitSemaphores = &semaphores.presentComplete;
+        submitInfo.signalSemaphoreCount = 1;
+        submitInfo.pSignalSemaphores = &semaphores.renderComplete;
+
+
+
+
+        uint32_t value_mask, value_list[32];
+        window = xcb_generate_id(connection);
+        value_mask = XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK;
+        value_list[0] = screen->black_pixel;
+        value_list[1] =
+                XCB_EVENT_MASK_KEY_RELEASE |
+                XCB_EVENT_MASK_EXPOSURE |
+                XCB_EVENT_MASK_STRUCTURE_NOTIFY |
+                XCB_EVENT_MASK_POINTER_MOTION |
+                XCB_EVENT_MASK_BUTTON_PRESS |
+                XCB_EVENT_MASK_BUTTON_RELEASE;
+        xcb_create_window(connection,
+                          XCB_COPY_FROM_PARENT,
+                          window, screen->root,
+                          0, 0, width, height, 0,
+                          XCB_WINDOW_CLASS_INPUT_OUTPUT,
+                          screen->root_visual,
+                          value_mask, value_list);
+        xcb_intern_atom_cookie_t cookie = xcb_intern_atom(connection, 1, 12, "WM_PROTOCOLS");
+        xcb_intern_atom_reply_t* reply = xcb_intern_atom_reply(connection, cookie, 0);
+        xcb_intern_atom_cookie_t cookie2 = xcb_intern_atom(connection, 0, 16, "WM_DELETE_WINDOW");
+        atom_wm_delete_window = xcb_intern_atom_reply(connection, cookie2, 0);
+        xcb_change_property(connection, XCB_PROP_MODE_REPLACE,
+                            window, (*reply).atom, 4, 32, 1,
+                            &(*atom_wm_delete_window).atom);
+        xcb_change_property(connection, XCB_PROP_MODE_REPLACE,
+                            window, XCB_ATOM_WM_NAME, XCB_ATOM_STRING, 8,
+                            title.size(), title.c_str());
+        free(reply);
+        xcb_map_window(connection, window);
+
+
+
+        VkXcbSurfaceCreateInfoKHR surfaceCreateInfo = {};
+        surfaceCreateInfo.sType = VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR;
+        surfaceCreateInfo.connection = connection;
+        surfaceCreateInfo.window = window;
+        ret = vkCreateXcbSurfaceKHR(instance, &surfaceCreateInfo, NULL, &surface);
+
+
+
+        uint32_t queueCount;
+        vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueCount, NULL);
+        if (queueCount <= 0) {
+            printf("Could not get physical device queue family property count!\n");
+            exit(1);
+        }
+        std::vector<VkQueueFamilyProperties> queueProps(queueCount);
+        vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueCount, queueProps.data());
+        std::vector<VkBool32> supportsPresent(queueCount);
+        for (uint32_t i = 0; i < queueCount; i++) {
+            fpGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, surface, &supportsPresent[i]);
+        }
+        uint32_t graphicsQueueNodeIndex = UINT32_MAX;
+        uint32_t presentQueueNodeIndex = UINT32_MAX;
+        for (uint32_t i = 0; i < queueCount; i++) {
+            if ((queueProps[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) != 0) {
+                if (graphicsQueueNodeIndex == UINT32_MAX) {
+                    graphicsQueueNodeIndex = i;
+                }
+                if (supportsPresent[i] == VK_TRUE) {
+                    graphicsQueueNodeIndex = i;
+                    presentQueueNodeIndex = i;
+                    break;
+                }
+            }
+        }
+        if (presentQueueNodeIndex == UINT32_MAX) {
+            for (uint32_t i = 0; i < queueCount; ++i) {
+                if (supportsPresent[i] == VK_TRUE) {
+                    presentQueueNodeIndex = i;
+                    break;
+                }
+            }
+        }
+        if (graphicsQueueNodeIndex == UINT32_MAX || presentQueueNodeIndex == UINT32_MAX) {
+            printf("Could not find a graphics and/or presenting queue!");
+            exit(1);
+        }
+        // TODO: use different graphics and presenting queues
+        if (graphicsQueueNodeIndex != presentQueueNodeIndex) {
+            printf("Separate graphics and presenting queues are not supported yet!");
+            exit(1);
+        }
+//        uint32_t queueNodeIndex = UINT32_MAX;
+//        queueNodeIndex = graphicsQueueNodeIndex;
+        uint32_t formatCount;
+        ret = fpGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, NULL);
+        if (ret != VK_SUCCESS || formatCount <= 0) {
+            printf("Could not get physical device surface format count!\n");
+            exit(1);
+        }
+        std::vector<VkSurfaceFormatKHR> surfaceFormats(formatCount);
+        ret = fpGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, surfaceFormats.data());
+        if (ret != VK_SUCCESS) {
+            printf("Could not get physical device surface format!\n");
+            exit(1);
+        }
+        VkFormat colorFormat;
+        if ((formatCount == 1) && (surfaceFormats[0].format == VK_FORMAT_UNDEFINED)) {
+            colorFormat = VK_FORMAT_B8G8R8A8_UNORM;
+        } else {
+            // TODO: don't just select the first one
+            colorFormat = surfaceFormats[0].format;
+        }
+        VkColorSpaceKHR colorSpace;
+        colorSpace = surfaceFormats[0].colorSpace;
+
+
+
+        if (enableValidation) {
+            CreateDebugReportCallback = (PFN_vkCreateDebugReportCallbackEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugReportCallbackEXT");
+            DestroyDebugReportCallback = (PFN_vkDestroyDebugReportCallbackEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugReportCallbackEXT");
+            dbgBreakCallback = (PFN_vkDebugReportMessageEXT)vkGetInstanceProcAddr(instance, "vkDebugReportMessageEXT");
+
+            VkDebugReportCallbackCreateInfoEXT dbgCreateInfo;
+            dbgCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT;
+            dbgCreateInfo.pNext = NULL;
+            dbgCreateInfo.pfnCallback = (PFN_vkDebugReportCallbackEXT) messageCallback;
+            dbgCreateInfo.pUserData = NULL;
+            dbgCreateInfo.flags = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT;
+            VkDebugReportCallbackEXT debugReportCallback;
+            ret = CreateDebugReportCallback(
+                    instance,
+                    &dbgCreateInfo,
+                    NULL,
+                    &debugReportCallback);
+            if (ret != VK_SUCCESS) {
+                printf("Could not create debug report callback!\n");
+                exit(1);
+            }
+        }
+
+
+
+
+        VkCommandPool cmdPool;
+        uint32_t queueNodeIndex = UINT32_MAX;
+        VkCommandPoolCreateInfo cmdPoolInfo = {};
+        cmdPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+        cmdPoolInfo.queueFamilyIndex = queueNodeIndex;
+        cmdPoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+        ret = vkCreateCommandPool(device, &cmdPoolInfo, nullptr, &cmdPool);
+        if (ret != VK_SUCCESS) {
+            printf("Could not create command pool!\n");
+            exit(1);
+        }
+
+
+        std::getchar();
+        return VK_SUCCESS;
     }
 }

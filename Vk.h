@@ -13,11 +13,26 @@
 
 namespace vkbp {
     struct Vk {
+        VkSurfaceKHR surface;
         VkInstance instance;
         VkPhysicalDevice physicalDevice;
+//        VkPhysicalDeviceMemoryProperties deviceMemoryProperties;
         VkDevice device;
         VkQueue queue;
         bool hasInit;
+
+        PFN_vkGetPhysicalDeviceSurfaceSupportKHR fpGetPhysicalDeviceSurfaceSupportKHR;
+        PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR fpGetPhysicalDeviceSurfaceCapabilitiesKHR;
+        PFN_vkGetPhysicalDeviceSurfaceFormatsKHR fpGetPhysicalDeviceSurfaceFormatsKHR;
+        PFN_vkGetPhysicalDeviceSurfacePresentModesKHR fpGetPhysicalDeviceSurfacePresentModesKHR;
+        PFN_vkCreateSwapchainKHR fpCreateSwapchainKHR;
+        PFN_vkDestroySwapchainKHR fpDestroySwapchainKHR;
+        PFN_vkGetSwapchainImagesKHR fpGetSwapchainImagesKHR;
+        PFN_vkAcquireNextImageKHR fpAcquireNextImageKHR;
+        PFN_vkQueuePresentKHR fpQueuePresentKHR;
+        PFN_vkCreateDebugReportCallbackEXT CreateDebugReportCallback;
+        PFN_vkDestroyDebugReportCallbackEXT DestroyDebugReportCallback;
+        PFN_vkDebugReportMessageEXT dbgBreakCallback;
 
         Vk();
         ~Vk();

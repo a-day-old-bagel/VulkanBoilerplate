@@ -19,7 +19,8 @@ namespace vkbp {
     void FillVkApplicationInfo(const char* appName, const char* engName, VkApplicationInfo &appInfo);
     void FillVkInstanceInfo(const VkApplicationInfo &appInfo, const std::vector<const char*> &extVec,
                             VkInstanceCreateInfo &instanceInfo);
-    std::string resolveEnumToString(VkResult err);
+    std::string resolveErrorToString(VkResult err);
+    std::string resolvePhysicalDeviceTypeToString(VkPhysicalDeviceType type);
 }
 
 #endif //VKBP_VULKANSTRUCTHELPERS_H
