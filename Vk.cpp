@@ -10,8 +10,13 @@
 #include <iostream>
 #include <cstring>
 #include "vulkan/vulkan.h"
+//#include "vkbpGlobal.h"
 #include "Vk.h"
 #include "vulkanHelpers.h"
+
+#ifdef WIN32
+#include <cstdio>
+#endif
 
 namespace vkbp {
 
@@ -63,12 +68,13 @@ namespace vkbp {
         } else if (flags & VK_DEBUG_REPORT_WARNING_BIT_EXT) {
             std::cout << "WARNING: " << "[" << pLayerPrefix << "] Code " << msgCode << " : " << pMsg << "\n";
         } else {
-            return false;
+            return (VkBool32)false;
         }
         fflush(stdout);
         free(message);
-        return false;
+        return (VkBool32)false;
     }
+
     VkResult Vk::initSimple() {
         int width = 800;
         int height = 600;
@@ -89,6 +95,15 @@ namespace vkbp {
             "VK_LAYER_GOOGLE_unique_objects",
         };
 
+#ifdef WIN32
+        AllocConsole();
+        AttachConsole(GetCurrentProcessId());
+        freopen("CON", "w", stdout);
+        SetConsoleTitle(TEXT(title.c_str()));
+        if (enableValidation) {
+            std::cout << "Validation enabled:\n";
+        }
+#else
         const xcb_setup_t* setup;
         xcb_screen_iterator_t iter;
         int scr;
@@ -108,6 +123,7 @@ namespace vkbp {
             xcb_screen_next(&iter);
         }
         screen = iter.data;
+#endif
 
         VkApplicationInfo appInfo = {};
         appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -115,11 +131,10 @@ namespace vkbp {
         appInfo.applicationVersion = VK_MAKE_VERSION(0, 0, 1);
         appInfo.pEngineName = name.c_str();
         appInfo.engineVersion = VK_MAKE_VERSION(0, 0, 1);
-        appInfo.apiVersion = VK_API_VERSION_1_0;
-        std::vector<const char*> enabledExtensions = {
-            VK_KHR_SURFACE_EXTENSION_NAME,
-            VK_KHR_XCB_SURFACE_EXTENSION_NAME
-        };
+        appInfo.apiVersion = VK_MAKE_VERSION(1, 0, 0);
+        std::vector<const char*> enabledExtensions;
+        enabledExtensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
+        enabledExtensions.push_back(Settings::windowing_system_extension_name);
 
         VkInstanceCreateInfo instanceCreateInfo = {};
         instanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -208,13 +223,15 @@ namespace vkbp {
             exit(1);
         }
 
-        std::array<float, 1> queuePriorities = {0.f};
+        std::vector<float> queuePriorities;
+        queuePriorities.push_back(0.f);
         VkDeviceQueueCreateInfo queueCreateInfo = {};
         queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
         queueCreateInfo.queueFamilyIndex = graphicsQueueIndex;
         queueCreateInfo.queueCount = 1;
         queueCreateInfo.pQueuePriorities = queuePriorities.data();
-        std::vector<const char*> enabledDeviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
+        std::vector<const char*> enabledDeviceExtensions;
+        enabledDeviceExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
         VkDeviceCreateInfo deviceCreateInfo = {};
         deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
         deviceCreateInfo.pNext = NULL;
@@ -246,13 +263,12 @@ namespace vkbp {
         vkGetDeviceQueue(device, graphicsQueueIndex, 0, &queue);
 
         VkFormat depthFormat = VK_FORMAT_UNDEFINED;
-        std::vector<VkFormat> depthFormats = {
-                VK_FORMAT_D32_SFLOAT_S8_UINT,
-                VK_FORMAT_D32_SFLOAT,
-                VK_FORMAT_D24_UNORM_S8_UINT,
-                VK_FORMAT_D16_UNORM_S8_UINT,
-                VK_FORMAT_D16_UNORM
-        };
+        std::vector<VkFormat> depthFormats;
+        depthFormats.push_back(VK_FORMAT_D32_SFLOAT_S8_UINT);
+        depthFormats.push_back(VK_FORMAT_D32_SFLOAT);
+        depthFormats.push_back(VK_FORMAT_D24_UNORM_S8_UINT);
+        depthFormats.push_back(VK_FORMAT_D16_UNORM_S8_UINT);
+        depthFormats.push_back(VK_FORMAT_D16_UNORM);
         for (auto format : depthFormats) {
             VkFormatProperties formatProps;
             vkGetPhysicalDeviceFormatProperties(physicalDevice, format, &formatProps);
@@ -324,7 +340,8 @@ namespace vkbp {
 
 
 
-
+#ifdef WIN32
+#else
         uint32_t value_mask, value_list[32];
         window = xcb_generate_id(connection);
         value_mask = XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK;
@@ -363,6 +380,7 @@ namespace vkbp {
         surfaceCreateInfo.connection = connection;
         surfaceCreateInfo.window = window;
         ret = vkCreateXcbSurfaceKHR(instance, &surfaceCreateInfo, NULL, &surface);
+#endif
 
 
 

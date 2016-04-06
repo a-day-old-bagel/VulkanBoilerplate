@@ -33,14 +33,14 @@ namespace vkbp {
         } else {
             instanceInfo.ppEnabledExtensionNames = NULL;
         }
-        instanceInfo.enabledLayerCount = settings::validation_layer_count;
-        instanceInfo.ppEnabledLayerNames = (const char**)settings::validation_layer_names;
+        instanceInfo.enabledLayerCount = Settings::validation_layer_count;
+        instanceInfo.ppEnabledLayerNames = (const char**)Settings::validation_layer_names;
     }
 
     void AppendBasicVkExtensions(std::vector<const char*> &extVec) {
         extVec.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
-        extVec.push_back(settings::windowing_system_extension_name);
-        if (settings::validation_layer_count) {
+        extVec.push_back(Settings::windowing_system_extension_name);
+        if (Settings::validation_layer_count) {
             extVec.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
         }
     }

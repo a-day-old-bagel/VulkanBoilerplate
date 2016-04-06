@@ -10,7 +10,7 @@
 #include "vkbpGlobal.h"
 
 namespace vkbp {
-    namespace settings {
+    namespace Settings {
         #ifdef VKBP_ENABLE_VALIDATION
         const uint32_t validation_layer_count = 8;
         const char* validation_layer_names[] = {
@@ -28,7 +28,7 @@ namespace vkbp {
         const uint32_t validation_layer_count = 0;
         const char* validation_layer_names = NULL;
         #endif
-        #ifdef _WIN32
+        #ifdef WIN32
         const char* windowing_system_extension_name = VK_KHR_WIN32_SURFACE_EXTENSION_NAME;
         #else
         const char* windowing_system_extension_name = VK_KHR_XCB_SURFACE_EXTENSION_NAME;
