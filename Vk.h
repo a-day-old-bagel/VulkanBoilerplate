@@ -10,6 +10,7 @@
 
 #include "vulkan/vulkan.h"
 #include "vkbpGlobal.h"
+#include "vulkanHelpers.h"
 
 namespace vkbp {
     struct Vk {
@@ -36,8 +37,8 @@ namespace vkbp {
 
         Vk();
         ~Vk();
-        VkResult init(const char* appName, const char* engName);
-        VkResult initSimple();
+        VkbpResult init(const char* appName, const char* engName);
+        VkbpResult initSimple();
     };
 }
 

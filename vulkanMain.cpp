@@ -12,9 +12,10 @@ int main() {
 
     vkbp::Vk vk;
 
-    VkResult res = vk.initSimple();
-    if (res != VK_SUCCESS) {
-        std::cout << std::endl << "Vulkan failed to initialize: " << vkbp::resolveErrorToString(res) << std::endl;
+    vkbp::VkbpResult res = vk.initSimple();
+    if (res.isError()) {
+        std::cout << res.toString() << std::endl;
+        std::cout << "Vulkan failed to initialize!\n";
         return 1;
     } else {
         std::cout << std::endl << "Vulkan instance created." << std::endl;

@@ -31,7 +31,7 @@ namespace vkbp {
         }
     }
 
-    VkResult Vk::init(const char* appName, const char* engName) {
+    VkbpResult Vk::init(const char* appName, const char* engName) {
 
         VkApplicationInfo appInfo;
         FillVkApplicationInfo(appName, engName, appInfo);
@@ -43,10 +43,12 @@ namespace vkbp {
         FillVkInstanceInfo(appInfo, vkExtensionsToUse, instanceInfo);
 
         VkResult res = vkCreateInstance(&instanceInfo, NULL, &instance);
-        if (res == VK_SUCCESS) {
-            hasInit = true;
+        if (res != VK_SUCCESS) {
+            return VKBP_ERROR(res);
         }
-        return res;
+
+        hasInit = true;
+        return VKBP_SUCCESS(nullptr);
     }
 
     VkBool32 messageCallback(
@@ -75,13 +77,13 @@ namespace vkbp {
         return (VkBool32)false;
     }
 
-    VkResult Vk::initSimple() {
+    VkbpResult Vk::initSimple() {
         int width = 800;
         int height = 600;
         float zoom = -2.f;
         std::string title = "Basic Vulkan";
         std::string name = "Basic Vulkan";
-        bool enableValidation = true;
+        bool enableValidation = false;      //TODO:this is crap
         uint32_t validationLayerCount = 9;
         const char *validationLayerNames[] = {
             "VK_LAYER_GOOGLE_threading",
@@ -114,8 +116,7 @@ namespace vkbp {
 
         connection = xcb_connect(NULL, &scr);
         if (connection == NULL) {
-            printf("Could not find a compatible Vulkan ICD!\n");
-            exit(1);
+            return VKBP_MSG("Could not find a compatible Vulkan ICD!");
         }
         setup = xcb_get_setup(connection);
         iter = xcb_setup_roots_iterator(setup);
@@ -161,25 +162,21 @@ namespace vkbp {
         VkResult ret;
         ret = vkCreateInstance(&instanceCreateInfo, NULL, &instance);
         if (ret != VK_SUCCESS) {
-            printf("Vulkan instance not created!\n");
-            return ret;
+            return VKBP_ERROR_MSG(ret, "Vulkan instance not created!");
         }
 
         uint32_t physicalDeviceCount = 0;
         ret = vkEnumeratePhysicalDevices(instance, &physicalDeviceCount, NULL);
         if (ret != VK_SUCCESS) {
-            printf("Unable to enumerate physical devices!\n");
-            return ret;
+            return VKBP_ERROR_MSG(ret, "Unable to enumerate physical devices!");
         }
         if (physicalDeviceCount <= 0) {
-            printf("No GPU found!");
-            exit(1);
+            return VKBP_MSG("No GPU found!");
         }
         std::vector<VkPhysicalDevice> physicalDevices(physicalDeviceCount);
         ret = vkEnumeratePhysicalDevices(instance, &physicalDeviceCount, physicalDevices.data());
         if (ret != VK_SUCCESS) {
-            printf("Unable to enumerate physical devices!\n");
-            return ret;
+            return VKBP_ERROR_MSG(ret, "Unable to enumerate physical devices!");
         }
 
         int whichPhysicalDevice = 0;
@@ -208,8 +205,7 @@ namespace vkbp {
         uint32_t graphicsQueueCount;
         vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &graphicsQueueCount, NULL);
         if (graphicsQueueCount < 1) {
-            printf("Queue family properties not found!\n");
-            exit(1);
+            return VKBP_MSG("Queue family properties not found!");
         }
         std::vector<VkQueueFamilyProperties> graphicsQueueProps(graphicsQueueCount);
         vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &graphicsQueueCount, graphicsQueueProps.data());
@@ -219,8 +215,7 @@ namespace vkbp {
             }
         }
         if (graphicsQueueIndex >= graphicsQueueCount) {
-            printf("Graphics queue not found!\n");
-            exit(1);
+            return VKBP_MSG("Graphics queue not found!");
         }
 
         std::vector<float> queuePriorities;
@@ -254,8 +249,7 @@ namespace vkbp {
         }
         ret = vkCreateDevice(physicalDevice, &deviceCreateInfo, NULL, &device);
         if (ret != VK_SUCCESS) {
-            printf("Could not create logical device");
-            return ret;
+            return VKBP_ERROR_MSG(ret, "Could not create logical device!");
         }
 
         VkPhysicalDeviceMemoryProperties deviceMemoryProperties;
@@ -277,8 +271,7 @@ namespace vkbp {
             }
         }
         if (depthFormat == VK_FORMAT_UNDEFINED) {
-            printf("Could not determine depth format!\n");
-            exit(1);
+            return VKBP_MSG("Could not determine depth format!");
         }
 
         #define GET_INSTANCE_PROC_ADDR(inst, entrypoint)                        \
@@ -286,7 +279,7 @@ namespace vkbp {
             fp##entrypoint = (PFN_vk##entrypoint) vkGetInstanceProcAddr(inst, "vk"#entrypoint); \
             if (fp##entrypoint == NULL)                                         \
             {																    \
-                exit(1);                                                        \
+                return VKBP_MSG("Could not get address for "#entrypoint);      \
             }                                                                   \
         }
         #define GET_DEVICE_PROC_ADDR(dev, entrypoint)                           \
@@ -294,7 +287,7 @@ namespace vkbp {
             fp##entrypoint = (PFN_vk##entrypoint) vkGetDeviceProcAddr(dev, "vk"#entrypoint);   \
             if (fp##entrypoint == NULL)                                         \
             {																    \
-                exit(1);                                                        \
+                return VKBP_MSG("Could not get address for "#entrypoint);      \
             }                                                                   \
         }
         GET_INSTANCE_PROC_ADDR(instance, GetPhysicalDeviceSurfaceSupportKHR);
@@ -319,13 +312,11 @@ namespace vkbp {
         } semaphores;
         ret = vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &semaphores.presentComplete);
         if (ret != VK_SUCCESS) {
-            printf("Could not create Vulkan semaphore (presentComplete)!\n");
-            exit(1);
+            return VKBP_ERROR_MSG(ret, "Could not create Vulkan semaphore (presentComplete)!");
         }
         ret = vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &semaphores.renderComplete);
         if (ret != VK_SUCCESS) {
-            printf("Could not create Vulkan semaphore (renderComplete)!\n");
-            exit(1);
+            return VKBP_ERROR_MSG(ret, "Could not create Vulkan semaphore (renderComplete)!");
         }
 
         VkPipelineStageFlags submitPipelineStages = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
@@ -387,8 +378,7 @@ namespace vkbp {
         uint32_t queueCount;
         vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueCount, NULL);
         if (queueCount <= 0) {
-            printf("Could not get physical device queue family property count!\n");
-            exit(1);
+            return VKBP_MSG("Could not get physical device queue family property count!");
         }
         std::vector<VkQueueFamilyProperties> queueProps(queueCount);
         vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueCount, queueProps.data());
@@ -419,27 +409,23 @@ namespace vkbp {
             }
         }
         if (graphicsQueueNodeIndex == UINT32_MAX || presentQueueNodeIndex == UINT32_MAX) {
-            printf("Could not find a graphics and/or presenting queue!");
-            exit(1);
+            return VKBP_MSG("Could not find a graphics and/or presenting queue!");
         }
         // TODO: use different graphics and presenting queues
         if (graphicsQueueNodeIndex != presentQueueNodeIndex) {
-            printf("Separate graphics and presenting queues are not supported yet!");
-            exit(1);
+            return VKBP_MSG("Separate graphics and presenting queues are not supported yet!");
         }
 //        uint32_t queueNodeIndex = UINT32_MAX;
 //        queueNodeIndex = graphicsQueueNodeIndex;
         uint32_t formatCount;
         ret = fpGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, NULL);
         if (ret != VK_SUCCESS || formatCount <= 0) {
-            printf("Could not get physical device surface format count!\n");
-            exit(1);
+            return VKBP_ERROR_MSG(ret, "Could not get physical device surface format count!");
         }
         std::vector<VkSurfaceFormatKHR> surfaceFormats(formatCount);
         ret = fpGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, surfaceFormats.data());
         if (ret != VK_SUCCESS) {
-            printf("Could not get physical device surface format!\n");
-            exit(1);
+            return VKBP_ERROR_MSG(ret, "Could not get physical device surface format!");
         }
         VkFormat colorFormat;
         if ((formatCount == 1) && (surfaceFormats[0].format == VK_FORMAT_UNDEFINED)) {
@@ -471,8 +457,7 @@ namespace vkbp {
                     NULL,
                     &debugReportCallback);
             if (ret != VK_SUCCESS) {
-                printf("Could not create debug report callback!\n");
-                exit(1);
+                return VKBP_ERROR_MSG(ret, "Could not create debug report callback!");
             }
         }
 
@@ -487,12 +472,11 @@ namespace vkbp {
         cmdPoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
         ret = vkCreateCommandPool(device, &cmdPoolInfo, nullptr, &cmdPool);
         if (ret != VK_SUCCESS) {
-            printf("Could not create command pool!\n");
-            exit(1);
+            return VKBP_ERROR_MSG(ret, "Could not create command pool!");
         }
 
 
         std::getchar();
-        return VK_SUCCESS;
+        return VKBP_SUCCESS;
     }
 }
