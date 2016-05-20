@@ -8,7 +8,7 @@
 
 #include "vulkan/vulkan.h"
 #include "vkbpGlobal.h"
-#include "vulkanHelpers.h"
+#include "vkbpHelpers.h"
 
 namespace vkbp {
 

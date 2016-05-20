@@ -12,17 +12,9 @@
 namespace vkbp {
     namespace Settings {
         #ifdef VKBP_ENABLE_VALIDATION
-        const uint32_t validation_layer_count = 9;
+        const uint32_t validation_layer_count = 1;
         const char* validation_layer_names[] = {
-                "VK_LAYER_GOOGLE_threading",
-                "VK_LAYER_LUNARG_mem_tracker",
-                "VK_LAYER_LUNARG_object_tracker",
-                "VK_LAYER_LUNARG_draw_state",
-                "VK_LAYER_LUNARG_param_checker",
-                "VK_LAYER_LUNARG_swapchain",
-                "VK_LAYER_LUNARG_device_limits",
-                "VK_LAYER_LUNARG_image",
-                "VK_LAYER_GOOGLE_unique_objects",
+                "VK_LAYER_LUNARG_standard_validation"   // includes a bunch of commonly-used layers
         };
         #else
         const uint32_t validation_layer_count = 0;

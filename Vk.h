@@ -10,16 +10,30 @@
 
 #include "vulkan/vulkan.h"
 #include "vkbpGlobal.h"
-#include "vulkanHelpers.h"
+#include "vkbpHelpers.h"
 
 namespace vkbp {
+
+    struct SwapChainBuffer {
+        VkImage image;
+        VkImageView view;
+    };
+
     struct Vk {
         VkSurfaceKHR surface;
+
         VkInstance instance;
         VkPhysicalDevice physicalDevice;
-//        VkPhysicalDeviceMemoryProperties deviceMemoryProperties;
         VkDevice device;
         VkQueue queue;
+
+        VkCommandBuffer setupCmdBuffer;
+
+        VkSwapchainKHR swapChain;
+        uint32_t width, height, imageCount;
+        std::vector<SwapChainBuffer> buffers;
+        std::vector<VkImage> images;
+
         bool hasInit;
 
         PFN_vkGetPhysicalDeviceSurfaceSupportKHR fpGetPhysicalDeviceSurfaceSupportKHR;

@@ -15,9 +15,9 @@
 #define VKBP_VULKANSTRUCTHELPERS_H
 
 //#define VKBP_FAIL VK_RESULT_MAX_ENUM
-#define VKBP_ERROR_MSG(res, msg) VkbpResult(__FILE__, __func__, __LINE__, res, msg)
-#define VKBP_ERROR(res) VkbpResult(__FILE__, __func__, __LINE__, res)
-#define VKBP_MSG(msg) VkbpResult(__FILE__, __func__, __LINE__, VK_RESULT_MAX_ENUM, msg)
+#define VKBP_ERR_MSG(res, msg) VkbpResult(__FILE__, __PRETTY_FUNCTION__, __LINE__, res, msg)
+#define VKBP_ERR(res) VkbpResult(__FILE__, __PRETTY_FUNCTION__, __LINE__, res)
+#define VKBP_MSG(msg) VkbpResult(__FILE__, __PRETTY_FUNCTION__, __LINE__, VK_RESULT_MAX_ENUM, msg)
 #define VKBP_SUCCESS VkbpResult();
 
 namespace vkbp {
