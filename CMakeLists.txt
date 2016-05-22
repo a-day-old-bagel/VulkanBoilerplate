@@ -33,7 +33,7 @@ set(INCLUDE_DIR ${INCLUDE_DIR} ./)
 include_directories(${INCLUDE_DIR})
 
 # Find all the source files
-set(SOURCE_FILES vulkanMain.cpp vulkanHelpers.cpp vulkanHelpers.h Vk.cpp Vk.h vkbpGlobal.h vkbpGlobal.cpp vkbp.h VkbpWindow.cpp VkbpWindow.h)
+set(SOURCE_FILES vulkanMain.cpp vkbpHelpers.cpp vkbpHelpers.h Vk.cpp Vk.h vkbpGlobal.h vkbpGlobal.cpp vkbp.h VkbpWindow.cpp VkbpWindow.h)
 
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
 

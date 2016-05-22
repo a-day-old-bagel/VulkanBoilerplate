@@ -8,7 +8,7 @@
 
 #include "vulkan/vulkan.h"
 #include "vkbpGlobal.h"
-#include "vulkanHelpers.h"
+#include "vkbpHelpers.h"
 
 namespace vkbp {
 
@@ -71,6 +71,9 @@ namespace vkbp {
             EMIT_CASE_ERROR_ENUM(ERROR_INCOMPATIBLE_DISPLAY_KHR);
             EMIT_CASE_ERROR_ENUM(ERROR_VALIDATION_FAILED_EXT);
             EMIT_CASE_ERROR_ENUM(ERROR_INVALID_SHADER_NV);
+            case VK_RESULT_MAX_ENUM:
+                return "Error";
+                break;
             default:
                 return "Unknown Error";
         }
@@ -91,4 +94,17 @@ namespace vkbp {
     }
     #undef EMIT_CASE_PHYSICAL_DEVICE_TYPE_ENUM
 
+    VkbpResult::VkbpResult(const char* message /*= ""*/)
+            : fileName(""), funcName(""), lineNumber(-1), errCode(VK_SUCCESS), message(message) { }
+
+    VkbpResult::VkbpResult(const char* fileName, const char* funcName, int lineNumber, VkResult errCode,
+                           const char* message /*= ""*/)
+            : fileName(fileName), funcName(funcName), lineNumber(lineNumber), errCode(errCode), message(message) { }
+
+    std::string VkbpResult::toString() {
+        return resolveErrorToString(errCode) + " in file \'" + fileName + "\' at line " + std::to_string(lineNumber) +
+                " (in function " + funcName + ")" + (message.length() ? " with message: " : "") + message;
+    }
+
 }
+

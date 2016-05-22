@@ -7,6 +7,6 @@
 
 #include "vkbpGlobal.h"
 #include "Vk.h"
-#include "vulkanHelpers.h"
+#include "vkbpHelpers.h"
 
 #endif //VKBP_VKBP_H
