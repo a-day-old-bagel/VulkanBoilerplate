@@ -175,13 +175,13 @@ namespace vkbp {
 
         int whichPhysicalDevice = 0;
         VkPhysicalDeviceType currentPhysicalDeviceType = VK_PHYSICAL_DEVICE_TYPE_OTHER;
-        std::cout << physicalDeviceCount << " Physical devices recognized:\n";
+        std::cout << "Physical devices recognized: (" << physicalDeviceCount << " total): \n    ----\n";
         VkPhysicalDeviceProperties deviceProperties = {};
         for (uint32_t i = 0; i < physicalDeviceCount; ++i) {
             vkGetPhysicalDeviceProperties(physicalDevices[i], &deviceProperties);
             std::cout << "    NAME: " << deviceProperties.deviceName << std::endl;
             std::cout << "    TYPE: " << resolvePhysicalDeviceTypeToString(deviceProperties.deviceType);
-            std::cout << std::endl;
+            std::cout << "\n    ----\n";
             if ((currentPhysicalDeviceType != VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU &&
                  currentPhysicalDeviceType != VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU &&
                  deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU) ||
