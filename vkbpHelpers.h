@@ -14,11 +14,14 @@
 #ifndef VKBP_VULKANSTRUCTHELPERS_H
 #define VKBP_VULKANSTRUCTHELPERS_H
 
-//#define VKBP_FAIL VK_RESULT_MAX_ENUM
 #define VKBP_ERR_MSG(res, msg) VkbpResult(__FILE__, __PRETTY_FUNCTION__, __LINE__, res, msg)
 #define VKBP_ERR(res) VkbpResult(__FILE__, __PRETTY_FUNCTION__, __LINE__, res)
 #define VKBP_MSG(msg) VkbpResult(__FILE__, __PRETTY_FUNCTION__, __LINE__, VK_RESULT_MAX_ENUM, msg)
 #define VKBP_SUCCESS VkbpResult();
+
+#define VKBP_CHECK_ERR_MSG(res, msg) if (res != VK_SUCCESS) return VKBP_ERR_MSG(res, msg)
+#define VKBP_CHECK_ERR(res) if (res != VK_SUCCESS) { return VKBP_ERR(res); }
+#define VKBP_CHECK_MSG(res, msg) if (res != VK_SUCCESS) { return VKBP_MSG(msg); }
 
 namespace vkbp {
     void AppendBasicVkExtensions(std::vector<const char*> &extVec);

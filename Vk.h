@@ -53,6 +53,7 @@ namespace vkbp {
         ~Vk();
         VkbpResult init(const char* appName, const char* engName);
         VkbpResult initSimple();
+        VkbpResult initSimple2();
     };
 }
 

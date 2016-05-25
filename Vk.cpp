@@ -9,6 +9,7 @@
 #include <array>
 #include <iostream>
 #include <cstring>
+#include <sstream>
 #include "vulkan/vulkan.h"
 //#include "vkbpGlobal.h"
 #include "Vk.h"
@@ -78,6 +79,9 @@ namespace vkbp {
     }
 
     VkbpResult Vk::initSimple() {
+
+        //region lotsOfStuff
+
         float zoom = -2.f;
         std::string title = "Basic Vulkan";
         std::string name = "Basic Vulkan";
@@ -426,6 +430,8 @@ namespace vkbp {
         VkColorSpaceKHR colorSpace;
         colorSpace = surfaceFormats[0].colorSpace;
 
+        //endregion
+
         //region setupDebugging
 
         if (enableValidation) {
@@ -495,269 +501,137 @@ namespace vkbp {
 
         //endregion
 
-        //region createSwapChain
+        return VKBP_SUCCESS;
+    }
 
-        VkSwapchainKHR oldSwapchain = swapChain;
 
-        VkSurfaceCapabilitiesKHR surfCaps;
-        ret = fpGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &surfCaps);
-        if (ret != VK_SUCCESS) {
-            return VKBP_ERR(ret);
+
+//region Platform
+
+#if defined( _WIN32 )
+
+#define VK_USE_PLATFORM_WIN32_KHR 1
+#define PLATFORM_SURFACE_EXTENSION_NAME VK_KHR_WIN32_SURFACE_EXTENSION_NAME
+#include <Windows.h>
+
+#elif defined( __linux )
+
+#define VK_USE_PLATFORM_XCB_KHR 1
+#define PLATFORM_SURFACE_EXTENSION_NAME VK_KHR_XCB_SURFACE_EXTENSION_NAME
+#include <xcb/xcb.h>
+
+#endif
+
+    //endregion
+
+//region VulkanDebugCallback
+
+    VKAPI_ATTR VkBool32 VKAPI_CALL
+    VulkanDebugCallback(
+            VkDebugReportFlagsEXT		flags,
+            VkDebugReportObjectTypeEXT	obj_type,
+            uint64_t					src_obj,
+            size_t						location,
+            int32_t						msg_code,
+            const char *				layer_prefix,
+            const char *				msg,
+            void *						user_data
+    )
+    {
+        std::ostringstream stream;
+        stream << "VKDBG: ";
+        if( flags & VK_DEBUG_REPORT_INFORMATION_BIT_EXT ) {
+            stream << "INFO: ";
         }
-
-        uint32_t presentModeCount;
-        ret = fpGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, NULL);
-        if (ret != VK_SUCCESS) {
-            return VKBP_ERR(ret);
+        if( flags & VK_DEBUG_REPORT_WARNING_BIT_EXT ) {
+            stream << "WARNING: ";
         }
-        if (!presentModeCount) {
-            return VKBP_MSG("Couldn't find any present modes!");
+        if( flags & VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT ) {
+            stream << "PERFORMANCE: ";
         }
-
-        std::vector<VkPresentModeKHR> presentModes(presentModeCount);
-
-        if (ret != VK_SUCCESS) {
-            return VKBP_ERR(ret);
+        if( flags & VK_DEBUG_REPORT_ERROR_BIT_EXT ) {
+            stream << "ERROR: ";
         }
-
-        VkExtent2D swapchainExtent = {};
-        if (surfCaps.currentExtent.width == -1) {   // -1 indicates undefined: use default values
-            swapchainExtent.width = width;
-            swapchainExtent.height = height;
-        } else {                                    // otherwise 1 indicates self-defined (can only be -1 or 1).
-            swapchainExtent = surfCaps.currentExtent;
-            width = surfCaps.currentExtent.width;
-            height = surfCaps.currentExtent.height;
+        if( flags & VK_DEBUG_REPORT_DEBUG_BIT_EXT ) {
+            stream << "DEBUG: ";
         }
+        stream << "@[" << layer_prefix << "]: ";
+        stream << msg << std::endl;
+        std::cout << stream.str();
 
-        VkPresentModeKHR swapchainPresentMode = VK_PRESENT_MODE_FIFO_KHR;   // Todo: This is ensured to work?
-        for (size_t i = 0; i < presentModeCount; i++)
-        {
-            if (presentModes[i] == VK_PRESENT_MODE_MAILBOX_KHR) {
-                swapchainPresentMode = VK_PRESENT_MODE_MAILBOX_KHR; // This is preferred
-                break;
-            }
-            if (presentModes[i] == VK_PRESENT_MODE_IMMEDIATE_KHR) {
-                swapchainPresentMode = VK_PRESENT_MODE_IMMEDIATE_KHR;   // This is okay too
-            }
-        }
+#ifdef _WIN32
+        if( flags & VK_DEBUG_REPORT_ERROR_BIT_EXT ) {
+		MessageBox( NULL, stream.str().c_str(), "Vulkan Error!", 0 );
+	}
+#endif
 
-        // Determine the number of images
-        uint32_t desiredNumberOfSwapchainImages = surfCaps.minImageCount + 1;
-        if ((surfCaps.maxImageCount > 0) && (desiredNumberOfSwapchainImages > surfCaps.maxImageCount))
-        {
-            desiredNumberOfSwapchainImages = surfCaps.maxImageCount;
-        }
+        return false;
+    }
 
-        VkSurfaceTransformFlagsKHR preTransform;
-        if (surfCaps.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR)
-        {
-            preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
-        }
-        else
-        {
-            preTransform = surfCaps.currentTransform;
-        }
+    //endregion
 
-        VkSwapchainCreateInfoKHR swapchainCI = {};
-        swapchainCI.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-        swapchainCI.pNext = NULL;
-        swapchainCI.surface = surface;
-        swapchainCI.minImageCount = desiredNumberOfSwapchainImages;
-        swapchainCI.imageFormat = colorFormat;
-        swapchainCI.imageColorSpace = colorSpace;
-        swapchainCI.imageExtent = { swapchainExtent.width, swapchainExtent.height };
-        swapchainCI.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-        swapchainCI.preTransform = (VkSurfaceTransformFlagBitsKHR)preTransform;
-        swapchainCI.imageArrayLayers = 1;
-        swapchainCI.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-        swapchainCI.queueFamilyIndexCount = 0;
-        swapchainCI.pQueueFamilyIndices = NULL;
-        swapchainCI.presentMode = swapchainPresentMode;
-        swapchainCI.oldSwapchain = oldSwapchain;
-        swapchainCI.clipped = (VkBool32)true;
-        swapchainCI.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
 
-        ret = fpCreateSwapchainKHR(device, &swapchainCI, nullptr, &swapChain);
-        if (ret != VK_SUCCESS) {
-            return VKBP_ERR(ret);
-        }
+    VkbpResult Vk::initSimple2() {
 
-        // clean up any existing swap chain
-        if (oldSwapchain != VK_NULL_HANDLE)
-        {
-            for (uint32_t i = 0; i < imageCount; i++)
-            {
-                vkDestroyImageView(device, buffers[i].view, nullptr);
-            }
-            fpDestroySwapchainKHR(device, oldSwapchain, nullptr);
-        }
+        //region RendererMembers
 
-        ret = fpGetSwapchainImagesKHR(device, swapChain, &imageCount, NULL);
-        if (ret != VK_SUCCESS) {
-            return VKBP_ERR(ret);
-        }
-
-        // make images for swap chains
-        images.resize(imageCount);
-        ret = fpGetSwapchainImagesKHR(device, swapChain, &imageCount, images.data());
-        if (ret != VK_SUCCESS) {
-            return VKBP_ERR(ret);
-        }
-
-        // make buffers for swap chains
-        buffers.resize(imageCount);
-        for (uint32_t i = 0; i < imageCount; i++)
-        {
-            VkImageViewCreateInfo colorAttachmentView = {};
-            colorAttachmentView.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-            colorAttachmentView.pNext = NULL;
-            colorAttachmentView.format = colorFormat;
-            colorAttachmentView.components = {
-                    VK_COMPONENT_SWIZZLE_R,
-                    VK_COMPONENT_SWIZZLE_G,
-                    VK_COMPONENT_SWIZZLE_B,
-                    VK_COMPONENT_SWIZZLE_A
-            };
-            colorAttachmentView.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-            colorAttachmentView.subresourceRange.baseMipLevel = 0;
-            colorAttachmentView.subresourceRange.levelCount = 1;
-            colorAttachmentView.subresourceRange.baseArrayLayer = 0;
-            colorAttachmentView.subresourceRange.layerCount = 1;
-            colorAttachmentView.viewType = VK_IMAGE_VIEW_TYPE_2D;
-            colorAttachmentView.flags = 0;
-
-            buffers[i].image = images[i];
-
-            // Transform images from initial (undefined) to present layout
-            vkTools::setImageLayout(
-                    cmdBuffer,
-                    buffers[i].image,
-                    VK_IMAGE_ASPECT_COLOR_BIT,
-                    VK_IMAGE_LAYOUT_UNDEFINED,
-                    VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
-
-            VkImageSubresourceRange subresourceRange = {};
-            subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-            subresourceRange.baseMipLevel = 0;
-            subresourceRange.levelCount = 1;
-            subresourceRange.layerCount = 1;
-            setImageLayout(cmdbuffer, image, aspectMask, oldImageLayout, newImageLayout, subresourceRange);
-
-            //region setImageLayout
-
-            // Create an image barrier object
-            VkImageMemoryBarrier imageMemoryBarrier = vkTools::initializers::imageMemoryBarrier();
-            imageMemoryBarrier.oldLayout = oldImageLayout;
-            imageMemoryBarrier.newLayout = newImageLayout;
-            imageMemoryBarrier.image = image;
-            imageMemoryBarrier.subresourceRange = subresourceRange;
-
-            // Source layouts (old)
-
-            // Undefined layout
-            // Only allowed as initial layout!
-            // Make sure any writes to the image have been finished
-            if (oldImageLayout == VK_IMAGE_LAYOUT_PREINITIALIZED)
-            {
-                imageMemoryBarrier.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
-            }
-
-            // Old layout is color attachment
-            // Make sure any writes to the color buffer have been finished
-            if (oldImageLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
-            {
-                imageMemoryBarrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-            }
-
-            // Old layout is depth/stencil attachment
-            // Make sure any writes to the depth/stencil buffer have been finished
-            if (oldImageLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
-            {
-                imageMemoryBarrier.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-            }
-
-            // Old layout is transfer source
-            // Make sure any reads from the image have been finished
-            if (oldImageLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL)
-            {
-                imageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-            }
-
-            // Old layout is shader read (sampler, input attachment)
-            // Make sure any shader reads from the image have been finished
-            if (oldImageLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
-            {
-                imageMemoryBarrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
-            }
-
-            // Target layouts (new)
-
-            // New layout is transfer destination (copy, blit)
-            // Make sure any copyies to the image have been finished
-            if (newImageLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
-            {
-                imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-            }
-
-            // New layout is transfer source (copy, blit)
-            // Make sure any reads from and writes to the image have been finished
-            if (newImageLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL)
-            {
-                imageMemoryBarrier.srcAccessMask = imageMemoryBarrier.srcAccessMask | VK_ACCESS_TRANSFER_READ_BIT;
-                imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-            }
-
-            // New layout is color attachment
-            // Make sure any writes to the color buffer hav been finished
-            if (newImageLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
-            {
-                imageMemoryBarrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-                imageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-            }
-
-            // New layout is depth attachment
-            // Make sure any writes to depth/stencil buffer have been finished
-            if (newImageLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
-            {
-                imageMemoryBarrier.dstAccessMask = imageMemoryBarrier.dstAccessMask | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-            }
-
-            // New layout is shader read (sampler, input attachment)
-            // Make sure any writes to the image have been finished
-            if (newImageLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
-            {
-                imageMemoryBarrier.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
-                imageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-            }
-
-            // Put barrier on top
-            VkPipelineStageFlags srcStageFlags = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-            VkPipelineStageFlags destStageFlags = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-
-            // Put barrier inside setup command buffer
-            vkCmdPipelineBarrier(
-                    cmdbuffer,
-                    srcStageFlags,
-                    destStageFlags,
-                    0,
-                    0, nullptr,
-                    0, nullptr,
-                    1, &imageMemoryBarrier);
-
-            //endregion
-
-            colorAttachmentView.image = buffers[i].image;
-
-            ret = vkCreateImageView(device, &colorAttachmentView, nullptr, &buffers[i].view);
-            if (ret != VK_SUCCESS) {
-                return VKBP_ERR(ret);
-            }
-        }
+        VkInstance								_instance						= VK_NULL_HANDLE;
+        VkPhysicalDevice						_gpu							= VK_NULL_HANDLE;
+        VkDevice								_device							= VK_NULL_HANDLE;
+        VkQueue									_queue							= VK_NULL_HANDLE;
+        VkPhysicalDeviceProperties				_gpu_properties					= {};
+        uint32_t								_graphics_family_index			= 0;
+        std::vector<const char*>				_instance_layers;
+        std::vector<const char*>				_instance_extensions;
+        std::vector<const char*>				_device_layers;
+        std::vector<const char*>				_device_extensions;
+        VkDebugReportCallbackEXT				_debug_report					= VK_NULL_HANDLE;
+        VkDebugReportCallbackCreateInfoEXT		_debug_callback_create_info		= {};
 
         //endregion
 
-        std::getchar();
+        //region WindowMembers
+
+        VkSurfaceKHR						_surface						= VK_NULL_HANDLE;
+        VkSwapchainKHR						_swapchain						= VK_NULL_HANDLE;
+        uint32_t							_surface_size_x					= 512;
+        uint32_t							_surface_size_y					= 512;
+        std::string							_window_name;
+        uint32_t							_swapchain_image_count			= 2;
+        VkSurfaceFormatKHR					_surface_format					= {};
+        VkSurfaceCapabilitiesKHR			_surface_capabilities			= {};
+        bool								_window_should_run				= true;
+#if VK_USE_PLATFORM_WIN32_KHR
+        HINSTANCE							_win32_instance					= NULL;
+	HWND								_win32_window					= NULL;
+	std::string							_win32_class_name;
+	static uint64_t						_win32_class_id_counter;
+#elif VK_USE_PLATFORM_XCB_KHR
+        xcb_connection_t				*	_xcb_connection					= nullptr;
+        xcb_screen_t					*	_xcb_screen						= nullptr;
+        xcb_window_t						_xcb_window						= 0;
+        xcb_intern_atom_reply_t			*	_xcb_atom_window_reply			= nullptr;
+#endif
+
+        //endregion
+
+        _instance_extensions.push_back( VK_KHR_SURFACE_EXTENSION_NAME );
+        _instance_extensions.push_back( PLATFORM_SURFACE_EXTENSION_NAME );
+        _device_extensions.push_back( VK_KHR_SWAPCHAIN_EXTENSION_NAME );
+
+        _debug_callback_create_info.sType			= VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT;
+        _debug_callback_create_info.pfnCallback		= VulkanDebugCallback;
+        _debug_callback_create_info.flags			=
+		        VK_DEBUG_REPORT_INFORMATION_BIT_EXT         |
+                VK_DEBUG_REPORT_WARNING_BIT_EXT             |
+                VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT |
+                VK_DEBUG_REPORT_ERROR_BIT_EXT               |
+                VK_DEBUG_REPORT_DEBUG_BIT_EXT               ;
+        _instance_layers.push_back( "VK_LAYER_LUNARG_standard_validation" );
+        _instance_extensions.push_back( VK_EXT_DEBUG_REPORT_EXTENSION_NAME );
+        _device_layers.push_back( "VK_LAYER_LUNARG_standard_validation" );
+
         return VKBP_SUCCESS;
     }
+
 }
