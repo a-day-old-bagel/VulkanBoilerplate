@@ -506,26 +506,22 @@ namespace vkbp {
 
 
 
-//region Platform
 
-#if defined( _WIN32 )
 
-#define VK_USE_PLATFORM_WIN32_KHR 1
-#define PLATFORM_SURFACE_EXTENSION_NAME VK_KHR_WIN32_SURFACE_EXTENSION_NAME
-#include <Windows.h>
 
-#elif defined( __linux )
-
-#define VK_USE_PLATFORM_XCB_KHR 1
-#define PLATFORM_SURFACE_EXTENSION_NAME VK_KHR_XCB_SURFACE_EXTENSION_NAME
-#include <xcb/xcb.h>
-
-#endif
-
+    //region Platform
+    #if defined( _WIN32 )
+    #define VK_USE_PLATFORM_WIN32_KHR 1
+    #define PLATFORM_SURFACE_EXTENSION_NAME VK_KHR_WIN32_SURFACE_EXTENSION_NAME
+    #include <Windows.h>
+    #elif defined( __linux )
+    #define VK_USE_PLATFORM_XCB_KHR 1
+    #define PLATFORM_SURFACE_EXTENSION_NAME VK_KHR_XCB_SURFACE_EXTENSION_NAME
+    #include <xcb/xcb.h>
+    #endif
     //endregion
 
-//region VulkanDebugCallback
-
+    //region VulkanDebugCallback
     VKAPI_ATTR VkBool32 VKAPI_CALL
     VulkanDebugCallback(
             VkDebugReportFlagsEXT		flags,
@@ -567,14 +563,12 @@ namespace vkbp {
 
         return false;
     }
-
     //endregion
 
-
     VkbpResult Vk::initSimple2() {
+        VkResult result;
 
         //region RendererMembers
-
         VkInstance								_instance						= VK_NULL_HANDLE;
         VkPhysicalDevice						_gpu							= VK_NULL_HANDLE;
         VkDevice								_device							= VK_NULL_HANDLE;
@@ -586,12 +580,12 @@ namespace vkbp {
         std::vector<const char*>				_device_layers;
         std::vector<const char*>				_device_extensions;
         VkDebugReportCallbackEXT				_debug_report					= VK_NULL_HANDLE;
+
+        VkApplicationInfo                       application_info {};
+        VkInstanceCreateInfo                    instance_create_info {};
         VkDebugReportCallbackCreateInfoEXT		_debug_callback_create_info		= {};
-
         //endregion
-
         //region WindowMembers
-
         VkSurfaceKHR						_surface						= VK_NULL_HANDLE;
         VkSwapchainKHR						_swapchain						= VK_NULL_HANDLE;
         uint32_t							_surface_size_x					= 512;
@@ -612,13 +606,17 @@ namespace vkbp {
         xcb_window_t						_xcb_window						= 0;
         xcb_intern_atom_reply_t			*	_xcb_atom_window_reply			= nullptr;
 #endif
-
         //endregion
-
+        //region FunctionPointerMembers
+        PFN_vkCreateDebugReportCallbackEXT		fvkCreateDebugReportCallbackEXT		= nullptr;
+        PFN_vkDestroyDebugReportCallbackEXT		fvkDestroyDebugReportCallbackEXT	= nullptr;
+        //endregion
+        //region SetupLayersAndExtensions
         _instance_extensions.push_back( VK_KHR_SURFACE_EXTENSION_NAME );
         _instance_extensions.push_back( PLATFORM_SURFACE_EXTENSION_NAME );
         _device_extensions.push_back( VK_KHR_SWAPCHAIN_EXTENSION_NAME );
-
+        //endregion
+        //region SetupDebug
         _debug_callback_create_info.sType			= VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT;
         _debug_callback_create_info.pfnCallback		= VulkanDebugCallback;
         _debug_callback_create_info.flags			=
@@ -630,6 +628,102 @@ namespace vkbp {
         _instance_layers.push_back( "VK_LAYER_LUNARG_standard_validation" );
         _instance_extensions.push_back( VK_EXT_DEBUG_REPORT_EXTENSION_NAME );
         _device_layers.push_back( "VK_LAYER_LUNARG_standard_validation" );
+        //endregion
+        //region InitInstance
+        application_info.sType							= VK_STRUCTURE_TYPE_APPLICATION_INFO;
+        application_info.apiVersion						= VK_MAKE_VERSION( 1, 0, 2 );			// 1.0.2 should work on all vulkan enabled drivers.
+        application_info.applicationVersion				= VK_MAKE_VERSION( 0, 1, 0 );
+        application_info.pApplicationName				= "Vulkan API Tutorial Series";
+
+        instance_create_info.sType						= VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+        instance_create_info.pApplicationInfo			= &application_info;
+        instance_create_info.enabledLayerCount			= (uint32_t)_instance_layers.size();
+        instance_create_info.ppEnabledLayerNames		= _instance_layers.data();
+        instance_create_info.enabledExtensionCount		= (uint32_t)_instance_extensions.size();
+        instance_create_info.ppEnabledExtensionNames	= _instance_extensions.data();
+        instance_create_info.pNext						= &_debug_callback_create_info;
+
+        result = vkCreateInstance(&instance_create_info, nullptr, &_instance);
+        VKBP_CHECK_ERR(result);
+        //endregion
+        //region InitDebug
+        fvkCreateDebugReportCallbackEXT		= (PFN_vkCreateDebugReportCallbackEXT)vkGetInstanceProcAddr( _instance, "vkCreateDebugReportCallbackEXT" );
+        fvkDestroyDebugReportCallbackEXT	= (PFN_vkDestroyDebugReportCallbackEXT)vkGetInstanceProcAddr( _instance, "vkDestroyDebugReportCallbackEXT" );
+        if(!fvkCreateDebugReportCallbackEXT || !fvkDestroyDebugReportCallbackEXT) {
+            return VKBP_MSG("Unable to retrieve function pointers!");
+        }
+        fvkCreateDebugReportCallbackEXT( _instance, &_debug_callback_create_info, nullptr, &_debug_report );
+        //endregion
+        //region FindGPU
+        uint32_t physDeviceCount = 0;
+        result = vkEnumeratePhysicalDevices(_instance, &physDeviceCount, nullptr);
+        VKBP_CHECK_ERR(result);
+        if (!physDeviceCount) {
+            return VKBP_MSG("No GPU found!");
+        }
+        std::vector<VkPhysicalDevice> physDeviceList(physDeviceCount);
+        result = vkEnumeratePhysicalDevices(_instance, &physDeviceCount, physDeviceList.data());
+        VKBP_CHECK_ERR(result);
+        int whichPhysicalDevice = 0;
+        VkPhysicalDeviceType currentPhysDeviceType = VK_PHYSICAL_DEVICE_TYPE_OTHER;
+        std::cout << "Physical devices recognized: (" << physDeviceCount << " total): \n    ----\n";
+        for (uint32_t i = 0; i < physDeviceCount; ++i) {
+            vkGetPhysicalDeviceProperties(physDeviceList[i], &_gpu_properties);
+            std::cout << "    NAME: " << _gpu_properties.deviceName << std::endl;
+            std::cout << "    TYPE: " << resolvePhysicalDeviceTypeToString(_gpu_properties.deviceType);
+            std::cout << "\n    ----\n";
+            if (    (currentPhysDeviceType != VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU &&
+                        currentPhysDeviceType != VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU &&
+                        _gpu_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU) ||
+                    (currentPhysDeviceType != VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU &&
+                        _gpu_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU))
+            {
+                whichPhysicalDevice = i;
+                currentPhysDeviceType = _gpu_properties.deviceType;
+            }
+        }
+        _gpu = physDeviceList[whichPhysicalDevice];
+        vkGetPhysicalDeviceProperties( _gpu, &_gpu_properties );
+        std::cout << "Choosing to use: " << _gpu_properties.deviceName << std::endl;
+        //endregion
+        //region FindGraphicsQueue
+        uint32_t familyCount;
+        vkGetPhysicalDeviceQueueFamilyProperties(_gpu, &familyCount, NULL);
+        if (familyCount < 1) {
+            return VKBP_MSG("Queue family properties not found!");
+        }
+        std::vector<VkQueueFamilyProperties> queueFamilyList(familyCount);
+        vkGetPhysicalDeviceQueueFamilyProperties(_gpu, &familyCount, queueFamilyList.data());
+        for (_graphics_family_index = 0; _graphics_family_index < familyCount; ++_graphics_family_index) {
+            if (queueFamilyList[_graphics_family_index].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+                break;
+            }
+        }
+        if (_graphics_family_index >= familyCount) {
+            return VKBP_MSG("Graphics queue not found!");
+        }
+        //endregion
+        //region CreateDevice
+        float queue_priorities[] { 0.f };
+        VkDeviceQueueCreateInfo device_queue_create_info {};
+        device_queue_create_info.sType				= VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+        device_queue_create_info.queueFamilyIndex	= _graphics_family_index;
+        device_queue_create_info.queueCount			= 1;
+        device_queue_create_info.pQueuePriorities	= queue_priorities;
+
+        VkDeviceCreateInfo device_create_info {};
+        device_create_info.sType					= VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+        device_create_info.queueCreateInfoCount		= 1;
+        device_create_info.pQueueCreateInfos		= &device_queue_create_info;
+        device_create_info.enabledLayerCount		= _device_layers.size();
+        device_create_info.ppEnabledLayerNames		= _device_layers.data();
+        device_create_info.enabledExtensionCount	= _device_extensions.size();
+        device_create_info.ppEnabledExtensionNames	= _device_extensions.data();
+
+        result = vkCreateDevice(_gpu, &device_create_info, nullptr, &_device);
+        VKBP_CHECK_ERR(result);
+        vkGetDeviceQueue(_device, _graphics_family_index, 0, &_queue);
+        //endregion
 
         return VKBP_SUCCESS;
     }
