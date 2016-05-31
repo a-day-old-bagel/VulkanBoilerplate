@@ -8,17 +8,15 @@
 #include <iostream>
 #include "vkbp.h"
 
+using namespace vkbp;
+
 int main() {
 
-    vkbp::Vkbp vk;
-
-    vkbp::VkbpResult res = vk.initSimple();
+    Vkbp vk;
+    VkbpResult res = vk.initAllInOne();
     if (res.isError()) {
         std::cout << res.toString() << std::endl;
-        std::cout << "Vulkan failed to initialize!\n";
-        return 1;
-    } else {
-        std::cout << std::endl << "Vulkan instance created." << std::endl;
+        return res.errCode;
     }
 
     return 0;

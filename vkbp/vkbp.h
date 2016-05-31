@@ -5,6 +5,11 @@
 #ifndef VKBP_VKBP_H
 #define VKBP_VKBP_H
 
+#if defined( _WIN32 )
+#include <Windows.h>
+#include <cstdio>
+#endif
+
 #include "vkbpGlobal.h"
 #include "Vkbp.h"
 #include "vkbpHelpers.h"

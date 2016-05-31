@@ -14,9 +14,11 @@
 #ifndef VKBP_VULKANSTRUCTHELPERS_H
 #define VKBP_VULKANSTRUCTHELPERS_H
 
-#define VKBP_ERR_MSG(res, msg) VkbpResult(__FILE__, __PRETTY_FUNCTION__, __LINE__, res, msg)
-#define VKBP_ERR(res) VkbpResult(__FILE__, __PRETTY_FUNCTION__, __LINE__, res)
-#define VKBP_MSG(msg) VkbpResult(__FILE__, __PRETTY_FUNCTION__, __LINE__, VK_RESULT_MAX_ENUM, msg)
+#define __FILENAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
+
+#define VKBP_ERR_MSG(res, msg) VkbpResult(__FILENAME__, __func__, __LINE__, res, msg)
+#define VKBP_ERR(res) VkbpResult(__FILENAME__, __func__, __LINE__, res)
+#define VKBP_MSG(msg) VkbpResult(__FILENAME__, __func__, __LINE__, VK_RESULT_MAX_ENUM, msg)
 #define VKBP_SUCCESS VkbpResult();
 
 #define VKBP_CHECK_ERR_MSG(res, msg) if (res != VK_SUCCESS) return VKBP_ERR_MSG(res, msg)
@@ -30,6 +32,17 @@ namespace vkbp {
                             VkInstanceCreateInfo &instanceInfo);
     std::string resolveErrorToString(VkResult err);
     std::string resolvePhysicalDeviceTypeToString(VkPhysicalDeviceType type);
+
+    VKAPI_ATTR VkBool32 VKAPI_CALL
+    VkbpDebugCallback(
+            VkDebugReportFlagsEXT flags,
+            VkDebugReportObjectTypeEXT objType,
+            uint64_t sourceObject,
+            size_t location,
+            int32_t messageCode,
+            const char* layerPrefix,
+            const char* message,
+            void* userData);
 
     struct VkbpResult {
         int lineNumber;

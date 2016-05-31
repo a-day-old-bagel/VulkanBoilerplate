@@ -23,7 +23,7 @@ namespace vkbp {
         #ifdef WIN32
         const char* windowing_system_extension_name = VK_KHR_WIN32_SURFACE_EXTENSION_NAME;
         #else
-        const char* windowing_system_extension_name = VK_KHR_XCB_SURFACE_EXTENSION_NAME;
+//        const char* windowing_system_extension_name = VK_KHR_XCB_SURFACE_EXTENSION_NAME;
         #endif
     }
 }

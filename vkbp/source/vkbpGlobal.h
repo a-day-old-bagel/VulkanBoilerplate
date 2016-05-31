@@ -14,9 +14,15 @@
 #define VKBP_ENABLE_VALIDATION
 #endif
 
+#ifdef VDEBUG
+#define VKBP_VERBOSE_DEBUG true
+#else
+#define VKBP_VERBOSE_DEBUG false
+#endif
+
 namespace vkbp {
     namespace Settings {
-        extern const char* windowing_system_extension_name;
+//        extern const char* windowing_system_extension_name;
         extern const uint32_t validation_layer_count;
         #ifdef VKBP_ENABLE_VALIDATION
         extern const char* validation_layer_names[];

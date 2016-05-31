@@ -6,6 +6,8 @@
  * This code is licensed under the MIT license (MIT) (http://opensource.org/licenses/MIT)
  */
 
+#include <sstream>
+#include <iostream>
 #include "vulkan/vulkan.h"
 #include "vkbpGlobal.h"
 #include "vkbpHelpers.h"
@@ -39,10 +41,45 @@ namespace vkbp {
 
     void AppendBasicVkExtensions(std::vector<const char*> &extVec) {
         extVec.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
-        extVec.push_back(Settings::windowing_system_extension_name);
+//        extVec.push_back(Settings::windowing_system_extension_name);
         if (Settings::validation_layer_count) {
             extVec.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
         }
+    }
+
+    VKAPI_ATTR VkBool32 VKAPI_CALL
+    VkbpDebugCallback(
+            VkDebugReportFlagsEXT flags,
+            VkDebugReportObjectTypeEXT objType,
+            uint64_t sourceObject,
+            size_t location,
+            int32_t messageCode,
+            const char* layerPrefix,
+            const char* message,
+            void* userData
+    )
+    {
+        std::ostringstream out;
+        if( flags & VK_DEBUG_REPORT_ERROR_BIT_EXT ) {
+            out << "ERROR: ";
+        }
+        if( flags & VK_DEBUG_REPORT_WARNING_BIT_EXT ) {
+            out << "WARNING: ";
+        }
+        if (flags & VK_DEBUG_REPORT_INFORMATION_BIT_EXT) {
+            out << "INFO: ";
+        }
+        if (flags & VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT) {
+            out << "PERFORMANCE: ";
+        }
+        if (flags & VK_DEBUG_REPORT_DEBUG_BIT_EXT) {
+            out << "DEBUG: ";
+        }
+        out << "(" << layerPrefix << ", Code " << messageCode << ") " << message << std::endl;
+        std::cout << out.str();
+        fflush(stdout);
+
+        return (VkBool32)false;
     }
 
     #define EMIT_CASE_ERROR_ENUM(e) case VK_ ##e: return #e
@@ -95,15 +132,17 @@ namespace vkbp {
     #undef EMIT_CASE_PHYSICAL_DEVICE_TYPE_ENUM
 
     VkbpResult::VkbpResult(const char* message /*= ""*/)
-            : fileName(""), funcName(""), lineNumber(-1), errCode(VK_SUCCESS), message(message) { }
+            : lineNumber(-1), errCode(VK_SUCCESS), fileName(""), funcName(""), message(message) { }
 
     VkbpResult::VkbpResult(const char* fileName, const char* funcName, int lineNumber, VkResult errCode,
                            const char* message /*= ""*/)
-            : fileName(fileName), funcName(funcName), lineNumber(lineNumber), errCode(errCode), message(message) { }
+            : lineNumber(lineNumber), errCode(errCode), fileName(fileName), funcName(funcName), message(message) { }
 
     std::string VkbpResult::toString() {
-        return resolveErrorToString(errCode) + " in file \'" + fileName + "\' at line " + std::to_string(lineNumber) +
-                " (in function " + funcName + ")" + (message.length() ? " with message: " : "") + message;
+        return resolveErrorToString(errCode) + " found in file \'" + fileName + "\'" +
+                (funcName.length() ? " in function " : "" ) + funcName +
+                " at line " + std::to_string(lineNumber) +
+                (message.length() ? " with message: " : "") + message;
     }
 
 }
