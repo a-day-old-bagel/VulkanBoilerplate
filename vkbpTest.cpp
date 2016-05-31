@@ -6,7 +6,7 @@
 
 #include <vector>
 #include <iostream>
-#include "vkbp/vkbp.h"
+#include "vkbp.h"
 
 int main() {
 
