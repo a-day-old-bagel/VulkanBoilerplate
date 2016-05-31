@@ -5,8 +5,8 @@
 #ifndef VKBP_VKBP_H
 #define VKBP_VKBP_H
 
-#include "vkbpGlobal.h"
-#include "Vk.h"
-#include "vkbpHelpers.h"
+#include "source/vkbpGlobal.h"
+#include "source/Vkbp.h"
+#include "source/vkbpHelpers.h"
 
 #endif //VKBP_VKBP_H

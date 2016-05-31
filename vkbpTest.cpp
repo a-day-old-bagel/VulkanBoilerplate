@@ -6,11 +6,11 @@
 
 #include <vector>
 #include <iostream>
-#include "vkbp.h"
+#include "vkbp/vkbp.h"
 
 int main() {
 
-    vkbp::Vk vk;
+    vkbp::Vkbp vk;
 
     vkbp::VkbpResult res = vk.initSimple();
     if (res.isError()) {

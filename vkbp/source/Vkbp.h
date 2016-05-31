@@ -19,7 +19,7 @@ namespace vkbp {
         VkImageView view;
     };
 
-    struct Vk {
+    struct Vkbp {
         VkSurfaceKHR surface;
 
         VkInstance instance;
@@ -49,8 +49,8 @@ namespace vkbp {
         PFN_vkDestroyDebugReportCallbackEXT DestroyDebugReportCallback;
         PFN_vkDebugReportMessageEXT dbgBreakCallback;
 
-        Vk();
-        ~Vk();
+        Vkbp();
+        ~Vkbp();
         VkbpResult init(const char* appName, const char* engName);
         VkbpResult initSimple();
         VkbpResult initSimple2();

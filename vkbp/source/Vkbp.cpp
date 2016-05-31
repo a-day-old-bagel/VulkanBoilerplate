@@ -12,7 +12,7 @@
 #include <sstream>
 #include "vulkan/vulkan.h"
 //#include "vkbpGlobal.h"
-#include "Vk.h"
+#include "Vkbp.h"
 #include "vkbpHelpers.h"
 
 #ifdef WIN32
@@ -21,18 +21,18 @@
 
 namespace vkbp {
 
-    Vk::Vk() : instance(0), hasInit(false), setupCmdBuffer(VK_NULL_HANDLE), swapChain(VK_NULL_HANDLE),
+    Vkbp::Vkbp() : instance(0), hasInit(false), setupCmdBuffer(VK_NULL_HANDLE), swapChain(VK_NULL_HANDLE),
                width(1280), height(720), imageCount(0) {
 
     }
 
-    Vk::~Vk() {
+    Vkbp::~Vkbp() {
         if (hasInit) {
             vkDestroyInstance(instance, NULL);
         }
     }
 
-    VkbpResult Vk::init(const char* appName, const char* engName) {
+    VkbpResult Vkbp::init(const char* appName, const char* engName) {
 
         VkApplicationInfo appInfo;
         FillVkApplicationInfo(appName, engName, appInfo);
@@ -78,7 +78,7 @@ namespace vkbp {
         return (VkBool32)false;
     }
 
-    VkbpResult Vk::initSimple() {
+    VkbpResult Vkbp::initSimple() {
 
         //region lotsOfStuff
 
@@ -565,7 +565,7 @@ namespace vkbp {
     }
     //endregion
 
-    VkbpResult Vk::initSimple2() {
+    VkbpResult Vkbp::initSimple2() {
         VkResult result;
 
         //region RendererMembers
