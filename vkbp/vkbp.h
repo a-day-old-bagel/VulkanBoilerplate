@@ -11,7 +11,7 @@
 #endif
 
 #include "vkbpGlobal.h"
-#include "Vkbp.h"
 #include "vkbpHelpers.h"
+#include "Vkbp.h"
 
 #endif //VKBP_VKBP_H
