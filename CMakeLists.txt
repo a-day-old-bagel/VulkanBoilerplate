@@ -9,6 +9,13 @@ cmake_minimum_required( VERSION 3.3 )
 # Assign a project name
 project( VKBP )
 
+if( NOT WIN32 )
+    # these are the compiler flags to be used on gcc
+    set(CMAKE_CXX_FLAGS_DEBUG   "${CMAKE_CXX_FLAGS} -ggdb3 -Wall -std=c++11")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -Ofast -Wall -std=c++11")
+    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO  "${CMAKE_CXX_FLAGS} -Og -ggdb3 -Wall -std=c++11")
+endif()
+
 option( USE_INCLUDED_GLFW "Build GLFW from included source." OFF )
 
 if( USE_INCLUDED_GLFW )
