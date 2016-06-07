@@ -9,6 +9,8 @@
 #ifndef VKBP_DEFINES_H
 #define VKBP_DEFINES_H
 
+#include <vector>
+
 // The NDEBUG switch should be defined for any release build.  It removes validation layers and other debug code.
 #ifndef NDEBUG
 #define VKBP_ENABLE_VALIDATION
@@ -21,14 +23,20 @@
 #endif
 
 namespace vkbp {
+    namespace Debug {
+
+        extern const std::vector<const char*> validationLayerNames;
+
+//        extern uint32_t validationLayerCount;
+//#ifdef VKBP_ENABLE_VALIDATION
+//        extern const char* validationLayerNames[];
+//#else
+//        extern const char* const* validationLayerNames;
+//#endif
+
+    }
     namespace Settings {
-//        extern const char* windowing_system_extension_name;
-        extern const uint32_t validation_layer_count;
-        #ifdef VKBP_ENABLE_VALIDATION
-        extern const char* validation_layer_names[];
-        #else
-        extern const char* validation_layer_names;
-        #endif
+
     }
 }
 

@@ -26,10 +26,7 @@
 #define VKBP_CHECK_MSG(res, msg) if (res != VK_SUCCESS) { return VKBP_MSG(msg); }
 
 namespace vkbp {
-    void AppendBasicVkExtensions(std::vector<const char*> &extVec);
-    void FillVkApplicationInfo(const char* appName, const char* engName, VkApplicationInfo &appInfo);
-    void FillVkInstanceInfo(const VkApplicationInfo &appInfo, const std::vector<const char*> &extVec,
-                            VkInstanceCreateInfo &instanceInfo);
+
     std::string resolveErrorToString(VkResult err);
     std::string resolvePhysicalDeviceTypeToString(VkPhysicalDeviceType type);
 
