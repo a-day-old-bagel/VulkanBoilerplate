@@ -14,41 +14,6 @@
 
 namespace vkbp {
 
-    VKAPI_ATTR VkBool32 VKAPI_CALL
-    VkbpDebugCallback(
-            VkDebugReportFlagsEXT flags,
-            VkDebugReportObjectTypeEXT objType,
-            uint64_t sourceObject,
-            size_t location,
-            int32_t messageCode,
-            const char* layerPrefix,
-            const char* message,
-            void* userData
-    )
-    {
-        std::ostringstream out;
-        if( flags & VK_DEBUG_REPORT_ERROR_BIT_EXT ) {
-            out << "ERROR: ";
-        }
-        if( flags & VK_DEBUG_REPORT_WARNING_BIT_EXT ) {
-            out << "WARNING: ";
-        }
-        if (flags & VK_DEBUG_REPORT_INFORMATION_BIT_EXT) {
-            out << "INFO: ";
-        }
-        if (flags & VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT) {
-            out << "PERFORMANCE: ";
-        }
-        if (flags & VK_DEBUG_REPORT_DEBUG_BIT_EXT) {
-            out << "DEBUG: ";
-        }
-        out << "(" << layerPrefix << ", Code " << messageCode << ") " << message << std::endl;
-        std::cout << out.str();
-        fflush(stdout);
-
-        return (VkBool32)false;
-    }
-
     #define EMIT_CASE_ERROR_ENUM(e) case VK_ ##e: return #e
     std::string resolveErrorToString(VkResult err) {
         switch (err) {

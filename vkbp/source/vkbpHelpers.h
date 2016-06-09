@@ -30,17 +30,6 @@ namespace vkbp {
     std::string resolveErrorToString(VkResult err);
     std::string resolvePhysicalDeviceTypeToString(VkPhysicalDeviceType type);
 
-    VKAPI_ATTR VkBool32 VKAPI_CALL
-    VkbpDebugCallback(
-            VkDebugReportFlagsEXT flags,
-            VkDebugReportObjectTypeEXT objType,
-            uint64_t sourceObject,
-            size_t location,
-            int32_t messageCode,
-            const char* layerPrefix,
-            const char* message,
-            void* userData);
-
     struct VkbpResult {
         int lineNumber;
         VkResult errCode;

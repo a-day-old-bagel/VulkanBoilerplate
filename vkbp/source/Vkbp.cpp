@@ -28,9 +28,11 @@ namespace vkbp {
     }
 
     VkbpResult Vkbp::initAllInOne() {
+        VkbpResult returnValue = VKBP_SUCCESS;
         VkResult result;
 
-        //region RendererMembers
+        //region VulkanBasicMembers
+
         VkInstance instance = VK_NULL_HANDLE;
         VkPhysicalDevice physDevice = VK_NULL_HANDLE;
         VkDevice logiDevice = VK_NULL_HANDLE;
@@ -38,10 +40,11 @@ namespace vkbp {
         uint32_t graphicsFamilyIndex = 0;
         std::vector<const char*> instanceExtensions;
         std::vector<const char*> deviceExtensions;
-        VkDebugReportCallbackEXT debugReport = VK_NULL_HANDLE;
+        VkbpValidator validator;
 
         //endregion
         //region WindowMembers
+
         VkSurfaceKHR surface = VK_NULL_HANDLE;
         VkSwapchainKHR swapchain = VK_NULL_HANDLE;
         uint32_t surfaceSizeX = 512;
@@ -53,19 +56,19 @@ namespace vkbp {
         VkSurfaceFormatKHR surfaceFormat = {};
         VkSurfaceCapabilitiesKHR surfaceCapabilities = {};
         GLFWwindow* glfwWindow = nullptr;
-        //endregion
-        //region FunctionPointerMembers
-        PFN_vkCreateDebugReportCallbackEXT createDebugReportCallback = nullptr;
-        PFN_vkDestroyDebugReportCallbackEXT destroyDebugReportCallback = nullptr;
+
         //endregion
 
-        //region InitPlatform
+        //region InitGlfw
+
         glfwInit();
         if (glfwVulkanSupported() == GLFW_FALSE) {
             return VKBP_MSG("GLFW Vulkan support not found.");
         }
+
         //endregion
-        //region SetupLayersAndExtensions
+        //region DetermineExtensions
+
         instanceExtensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
         uint32_t instanceExtensionsCount = 0;
         const char** instanceExtensionsBuffer = glfwGetRequiredInstanceExtensions(&instanceExtensionsCount);
@@ -73,23 +76,10 @@ namespace vkbp {
             instanceExtensions.push_back(instanceExtensionsBuffer[i]);
         }
         deviceExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
-        //endregion
-        //region SetupDebug
-#ifdef VKBP_ENABLE_VALIDATION
-        VkDebugReportCallbackCreateInfoEXT debugReportCallbackCreateInfo {};
-        debugReportCallbackCreateInfo.sType       = VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT ;
-        debugReportCallbackCreateInfo.pfnCallback =                              VkbpDebugCallback ;
-        debugReportCallbackCreateInfo.flags       =                  VK_DEBUG_REPORT_ERROR_BIT_EXT |
-                                                                   VK_DEBUG_REPORT_WARNING_BIT_EXT ;
-        if (VKBP_VERBOSE_DEBUG) {
-            debugReportCallbackCreateInfo.flags  |=            VK_DEBUG_REPORT_INFORMATION_BIT_EXT |
-                                                       VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT |
-                                                                     VK_DEBUG_REPORT_DEBUG_BIT_EXT ;
-        }
-        instanceExtensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
-#endif
+
         //endregion
         //region InitInstance
+
         VkApplicationInfo applicationInfo {};
         applicationInfo.sType               =   VK_STRUCTURE_TYPE_APPLICATION_INFO ;
         applicationInfo.apiVersion          =             VK_MAKE_VERSION(1, 0, 2) ;
@@ -99,32 +89,22 @@ namespace vkbp {
         VkInstanceCreateInfo instanceCreateInfo {};
         instanceCreateInfo.sType                    =         VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO ;
         instanceCreateInfo.pApplicationInfo         =                               &applicationInfo ;
-        instanceCreateInfo.enabledLayerCount        =   (uint32_t)Debug::validationLayerNames.size() ;
-        instanceCreateInfo.ppEnabledLayerNames      =             Debug::validationLayerNames.data() ;
         instanceCreateInfo.enabledExtensionCount    =           (uint32_t) instanceExtensions.size() ;
         instanceCreateInfo.ppEnabledExtensionNames  =                      instanceExtensions.data() ;
-#ifdef VKBP_ENABLE_VALIDATION
-        instanceCreateInfo.pNext                    =                 &debugReportCallbackCreateInfo ;
-#else
         instanceCreateInfo.pNext                    =                                           NULL ;
-#endif
+
+        VkbpResult res = validator.addValidationInfoBeforeInstanceCreation(instanceExtensions, instanceCreateInfo);
+        if (res.isError()) { return res; }
 
         result = vkCreateInstance(&instanceCreateInfo, nullptr, &instance);
         VKBP_CHECK_ERR(result);
-        //endregion
-        //region InitDebug
-#ifdef VKBP_ENABLE_VALIDATION
-        createDebugReportCallback = (PFN_vkCreateDebugReportCallbackEXT) vkGetInstanceProcAddr(
-                instance, "vkCreateDebugReportCallbackEXT");
-        destroyDebugReportCallback = (PFN_vkDestroyDebugReportCallbackEXT) vkGetInstanceProcAddr(
-                instance, "vkDestroyDebugReportCallbackEXT");
-        if (!createDebugReportCallback || !destroyDebugReportCallback) {
-            return VKBP_MSG("Unable to retrieve debug report function pointers!");
-        }
-        createDebugReportCallback(instance, &debugReportCallbackCreateInfo, nullptr, &debugReport);
-#endif
+
+        res = validator.createDebugReportCallbackAfterInstanceCreation(instance);
+        if (res.isError()) { return res; }
+
         //endregion
         //region FindGpuAndGraphicsQueue
+
         std::stringstream report;
         uint32_t physDeviceCount = 0;
         result = vkEnumeratePhysicalDevices(instance, &physDeviceCount, nullptr);
@@ -181,8 +161,10 @@ namespace vkbp {
         }
         report << "Choosing to use " << physDevProperties.deviceName << std::endl;
         std::cout << report.str();
+
         //endregion
         //region CreateDevice
+
         float queuePriorities[]{0.f};
         VkDeviceQueueCreateInfo deviceQueueCreateInfo{};
         deviceQueueCreateInfo.sType             =   VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO ;
@@ -194,21 +176,25 @@ namespace vkbp {
         deviceCreateInfo.sType                      =           VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO ;
         deviceCreateInfo.queueCreateInfoCount       =                                              1 ;
         deviceCreateInfo.pQueueCreateInfos          =                         &deviceQueueCreateInfo ;
-        deviceCreateInfo.enabledLayerCount          =   (uint32_t)Debug::validationLayerNames.size() ;
-        deviceCreateInfo.ppEnabledLayerNames        =             Debug::validationLayerNames.data() ;
         deviceCreateInfo.enabledExtensionCount      =             (uint32_t) deviceExtensions.size() ;
         deviceCreateInfo.ppEnabledExtensionNames    =                        deviceExtensions.data() ;
+        deviceCreateInfo.enabledLayerCount          =           instanceCreateInfo.enabledLayerCount ;
+        deviceCreateInfo.ppEnabledLayerNames        =         instanceCreateInfo.ppEnabledLayerNames ;
 
         result = vkCreateDevice(physDevice, &deviceCreateInfo, nullptr, &logiDevice);
         VKBP_CHECK_ERR(result);
         vkGetDeviceQueue(logiDevice, graphicsFamilyIndex, 0, &queue);
+
         //endregion
         //region InitWindow
+
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
         glfwWindow = glfwCreateWindow(surfaceSizeX, surfaceSizeY, windowName.c_str(), nullptr, nullptr);
         glfwGetFramebufferSize(glfwWindow, (int*) &surfaceSizeX, (int*) &surfaceSizeY);
+
         //endregion
         //region InitSurface
+
         result = glfwCreateWindowSurface(instance, glfwWindow, nullptr, &surface);
         VKBP_CHECK_ERR(result);
 
@@ -238,8 +224,10 @@ namespace vkbp {
         } else {
             surfaceFormat = formats[0];
         }
+
         //endregion
         //region InitSwapchain
+
         if (swapchainImageCount < surfaceCapabilities.minImageCount + 1) {
             swapchainImageCount = surfaceCapabilities.minImageCount + 1;
         }
@@ -314,9 +302,11 @@ namespace vkbp {
             result = vkCreateImageView(logiDevice, &image_view_create_info, nullptr, &swapchainImageViews[i]);
             VKBP_CHECK_ERR_MSG(result, std::string("(iteration " + std::to_string(i)).c_str());
         }
+
         //endregion
 
         //region mainloop
+
         bool shouldRun = true;
         while (shouldRun) {
             if (glfwWindow) {
@@ -327,9 +317,11 @@ namespace vkbp {
                 }
             }
         }
+
         //endregion
 
         //region Destruct
+
         for (auto view : swapchainImageViews) {
             vkDestroyImageView(logiDevice, view, nullptr);
         }
@@ -342,17 +334,16 @@ namespace vkbp {
         vkDestroyDevice(logiDevice, nullptr);
         logiDevice = nullptr;
 
-#ifdef VKBP_ENABLE_VALIDATION
-        destroyDebugReportCallback(instance, debugReport, nullptr);
-        debugReport = VK_NULL_HANDLE;
-#endif
+        res = validator.destroyDebugReportCallbackBeforeInstanceDestruction(instance);
+        if (res.isError()) { returnValue = res; }
 
         vkDestroyInstance(instance, nullptr);
         instance = nullptr;
 
         glfwTerminate();
+
         //endregion
 
-        return VKBP_SUCCESS;
+        return returnValue;
     }
 }

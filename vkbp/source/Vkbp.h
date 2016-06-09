@@ -13,6 +13,7 @@
 #include "vulkan/vulkan.h"
 #include "vkbpGlobal.h"
 #include "vkbpHelpers.h"
+#include "VkbpValidator.h"
 
 namespace vkbp {
 

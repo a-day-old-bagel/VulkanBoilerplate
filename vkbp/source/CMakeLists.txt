@@ -14,5 +14,6 @@ set( SOURCE_FILES ${SOURCE_FILES}
         "${DIR}/Vkbp.cpp"           "${DIR}/Vkbp.h"
         "${DIR}/vkbpGlobal.cpp"     "${DIR}/vkbpGlobal.h"
         "${DIR}/vkbpHelpers.cpp"    "${DIR}/vkbpHelpers.h"
+        "${DIR}/VkbpValidator.cpp"  "${DIR}/VkbpValidator.h"
         PARENT_SCOPE
         )

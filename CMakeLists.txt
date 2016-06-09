@@ -11,9 +11,9 @@ project( VKBP )
 
 if( NOT WIN32 )
     # these are the compiler flags to be used on gcc
-    set(CMAKE_CXX_FLAGS_DEBUG   "${CMAKE_CXX_FLAGS} -ggdb3 -Wall -std=c++11")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -Ofast -Wall -std=c++11")
-    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO  "${CMAKE_CXX_FLAGS} -Og -ggdb3 -Wall -std=c++11")
+    set( CMAKE_CXX_FLAGS_DEBUG           "${CMAKE_CXX_FLAGS} -ggdb3     -Wall -std=c++11         " )
+    set( CMAKE_CXX_FLAGS_RELEASE         "${CMAKE_CXX_FLAGS} -Ofast     -Wall -std=c++11 -DNDEBUG" )
+    set( CMAKE_CXX_FLAGS_RELWITHDEBINFO  "${CMAKE_CXX_FLAGS} -Og -ggdb3 -Wall -std=c++11 -DNDEBUG" )
 endif()
 
 option( USE_INCLUDED_GLFW "Build GLFW from included source." OFF )
@@ -42,7 +42,7 @@ add_subdirectory( vkbp )
 
 # Add the test files to sources
 set( INCLUDE_DIRS ${INCLUDE_DIRS} ${CMAKE_CURRENT_LIST_DIR} )
-set( SOURCE_FILES ${SOURCE_FILES} vkbpTest.cpp )
+set( SOURCE_FILES ${SOURCE_FILES} vkbpTest.cpp)
 
 # Build
 include_directories( ${INCLUDE_DIRS} )

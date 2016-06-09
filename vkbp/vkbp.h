@@ -12,6 +12,7 @@
 
 #include "vkbpGlobal.h"
 #include "vkbpHelpers.h"
+#include "VkbpValidator.h"
 #include "Vkbp.h"
 
 #endif //VKBP_VKBP_H
