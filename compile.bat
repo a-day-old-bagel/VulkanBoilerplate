@@ -16,19 +16,26 @@
 :: You can re-run it in the same directory again to only compile what's changed
 :: since the last time you compiled.
 
+:: don't repeat commands to terminal
 @echo off
 
+:: enter a local scope in which to set variables
 setlocal
 
+:: set variable 'batdir' to be the directory in which this file resides (VulkanBoilerplate)
 set "batdir=%~dp0"
 
-:: calls the batch file that sets up the VS developer console environment
+:: call the batch file that sets up the VS developer console environment
 call "%VS140COMNTOOLS%VsDevCmd.bat"
 
+:: compile
 cl /c /I"%GLFW_PATH%\include" /I"%VULKAN_SDK%\Include" /I"%batdir%vkbp" /I"%batdir%vkbp\source" /nologo /W1 /WX- /O2 /Ob2 /Oy- /D WIN32 /D _WINDOWS /D _REENTRANT /D NDEBUG /D _MBCS /Zi /Gm /EHsc /MD /GS /Zc:wchar_t /Zc:forScope /Zc:inline /Gd /TP /analyze- "%batdir%vkbp\source\vkbpGlobal.cpp" "%batdir%vkbp\source\vkbpHelpers.cpp"  "%batdir%vkbp\source\vkbpValidator.cpp"  "%batdir%vkbp\source\Vkbp.cpp"  "%batdir%vkbpTest.cpp"
 
+:: link
 link /OUT:vkbp.exe /INCREMENTAL:NO /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib "%GLFW_PATH%\lib-vc2015\glfw3.lib" "%VULKAN_SDK%\Bin32\vulkan-1.lib" /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:vkbp.lib /MACHINE:X86 /SAFESEH  /machine:X86 vkbpGlobal.obj vkbpHelpers.obj vkbpValidator.obj Vkbp.obj vkbpTest.obj
 
+:: leave the local scope
 endlocal
 
+:: 'press any key to exit'
 pause
