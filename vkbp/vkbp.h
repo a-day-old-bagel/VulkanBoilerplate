@@ -8,11 +8,13 @@
 #if defined( _WIN32 )
 #include <Windows.h>
 #include <cstdio>
+#else
+#include <unistd.h>
 #endif
 
-#include "vkbpGlobal.h"
-#include "vkbpHelpers.h"
-#include "VkbpValidator.h"
-#include "Vkbp.h"
+#include "source/vkbpGlobal.h"
+#include "source/vkbpHelpers.h"
+#include "source/VkbpValidator.h"
+#include "source/Vkbp.h"
 
 #endif //VKBP_VKBP_H

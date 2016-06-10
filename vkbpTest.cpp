@@ -6,7 +6,7 @@
 
 #include <vector>
 #include <iostream>
-#include "vkbp.h"
+#include "vkbp/vkbp.h"
 
 using namespace vkbp;
 
